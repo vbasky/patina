@@ -14,6 +14,7 @@ import {
 import { loadNotebook } from "../core/actions";
 import type { Language } from "../core/notebook";
 import type { DirEntry } from "../core/state";
+import { ConfirmModal } from "./ConfirmModal";
 import { LanguageIcon } from "./LanguageIcon";
 import { SettingsModal } from "./SettingsModal";
 import { useDispatch, useGlobalState } from "./StateProvider";
@@ -48,6 +49,7 @@ const NotebookList = () => {
   const fileInput = useRef<HTMLInputElement>(null);
   const [newLang, setNewLang] = useState<Language>("Rust");
   const [showSettings, setShowSettings] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<DirEntry | null>(null);
 
   const dir = state.current_dir;
   const openDir = (path: string) => sendCommand({ type: "QueryDir", path });
@@ -66,10 +68,10 @@ const NotebookList = () => {
     }
   };
 
-  const deleteEntry = (entry: DirEntry) => {
-    const kind = entry.entry_type === "Dir" ? "folder" : "file";
-    if (window.confirm(`Delete ${kind} "${basename(entry.path)}"?`)) {
-      sendCommand({ type: "DeleteFile", path: entry.path });
+  const confirmDeleteEntry = () => {
+    if (confirmDelete) {
+      sendCommand({ type: "DeleteFile", path: confirmDelete.path });
+      setConfirmDelete(null);
     }
   };
 
@@ -162,6 +164,15 @@ const NotebookList = () => {
         </button>
       </div>
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+      {confirmDelete && (
+        <ConfirmModal
+          message={`Delete ${
+            confirmDelete.entry_type === "Dir" ? "folder" : "file"
+          } "${basename(confirmDelete.path)}"?`}
+          onConfirm={confirmDeleteEntry}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      )}
 
       <div className="flex items-center justify-between gap-2 px-3 pb-2">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
@@ -250,7 +261,7 @@ const NotebookList = () => {
                 title="Delete"
                 onClick={(e) => {
                   e.stopPropagation();
-                  deleteEntry(entry);
+                  setConfirmDelete(entry);
                 }}
                 className="shrink-0 rounded p-0.5 text-gray-400 opacity-0 transition hover:bg-red-100 hover:text-red-600 group-hover:opacity-100 dark:hover:bg-red-900/40"
               >
