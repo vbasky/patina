@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import {
   LuChevronLeft,
   LuFile,
@@ -10,14 +11,13 @@ import {
   LuTrash2,
   LuUpload,
 } from "react-icons/lu";
-import { useRef, useState } from "react";
-import { useSendCommand } from "./WsProvider";
-import { useDispatch, useGlobalState } from "./StateProvider";
 import { loadNotebook } from "../core/actions";
-import type { DirEntry } from "../core/state";
 import type { Language } from "../core/notebook";
+import type { DirEntry } from "../core/state";
 import { LanguageIcon } from "./LanguageIcon";
 import { SettingsModal } from "./SettingsModal";
+import { useDispatch, useGlobalState } from "./StateProvider";
+import { useSendCommand } from "./WsProvider";
 
 const LANGUAGES: Language[] = ["Rust", "Python", "JavaScript"];
 
@@ -43,8 +43,8 @@ const iconFor = (entry: DirEntry) => {
 
 const NotebookList = () => {
   const state = useGlobalState();
-  const sendCommand = useSendCommand()!;
-  const dispatch = useDispatch()!;
+  const sendCommand = useSendCommand();
+  const dispatch = useDispatch();
   const fileInput = useRef<HTMLInputElement>(null);
   const [newLang, setNewLang] = useState<Language>("Rust");
   const [showSettings, setShowSettings] = useState(false);
@@ -74,7 +74,9 @@ const NotebookList = () => {
   };
 
   // Hide dotfiles by their basename (entry paths are full, root-relative).
-  const entries = state.dir_entries.filter((e) => !basename(e.path).startsWith("."));
+  const entries = state.dir_entries.filter(
+    (e) => !basename(e.path).startsWith("."),
+  );
   entries.sort(
     (a, b) =>
       (a.entry_type === "Dir" ? 0 : 1) - (b.entry_type === "Dir" ? 0 : 1),
@@ -113,7 +115,13 @@ const NotebookList = () => {
     <div className="flex h-full w-72 flex-col border-r border-gray-200 bg-gray-50 dark:border-[#3a3a3a] dark:bg-[#252526]">
       {/* Brand */}
       <div className="flex items-center gap-2 px-3 pt-3 pb-2">
-        <img src="/patina.svg" width={22} height={22} alt="" className="rounded" />
+        <img
+          src="/patina.svg"
+          width={22}
+          height={22}
+          alt=""
+          className="rounded"
+        />
         <span className="font-semibold tracking-tight text-gray-800 dark:text-gray-100">
           Patina
         </span>

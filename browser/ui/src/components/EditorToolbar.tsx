@@ -1,19 +1,18 @@
+import type React from "react";
+import { LuFolderPlus, LuPencil, LuPlus, LuTrash2 } from "react-icons/lu";
+import { TbCircleDashed } from "react-icons/tb";
+import {
+  newEditorCode,
+  newEditorGroup,
+  removeEditorNode,
+} from "../core/actions";
+import { focusId } from "../core/focus";
 import {
   type EditorNode,
   type EditorNodeId,
   EditorScope,
   type Notebook,
 } from "../core/notebook";
-import { LuFolderPlus, LuPencil, LuPlus, LuTrash2 } from "react-icons/lu";
-import {
-  newEditorCode,
-  newEditorGroup,
-  removeEditorNode,
-} from "../core/actions";
-
-import type React from "react";
-import { TbCircleDashed } from "react-icons/tb";
-import { focusId } from "../core/focus";
 import { useDispatch } from "./StateProvider";
 
 const NodeButton: React.FC<{
@@ -46,9 +45,9 @@ export const NodeToolbar: React.FC<{
   isRoot: boolean;
 }> = ({ className, node, path, notebook, isRoot }) => {
   const isGroup = node !== null && node.type === "Group";
-  const dispatch = useDispatch()!;
+  const dispatch = useDispatch();
   return (
-    <div className={"flex " + className}>
+    <div className={`flex ${className}`}>
       {isGroup && !isRoot && (
         <NodeButton
           onClick={() => {

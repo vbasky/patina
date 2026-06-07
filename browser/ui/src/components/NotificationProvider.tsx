@@ -1,7 +1,7 @@
 // NotificationContext.tsx
 import type React from "react";
-import { createContext, useContext, useState, useCallback } from "react";
-import { LuX, LuCircleAlert, LuCircleCheck } from "react-icons/lu";
+import { createContext, useCallback, useContext, useState } from "react";
+import { LuCircleAlert, LuCircleCheck, LuX } from "react-icons/lu";
 
 // Define types
 export type NotificationType = "error" | "success";
@@ -37,6 +37,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: removeMessage is stable and defined below
   const pushMessage = useCallback(
     (text: string, type: NotificationType) => {
       const newMessage: Message = {
@@ -114,6 +115,7 @@ const NotificationOverlay: React.FC = () => {
             <Icon size={20} className="mr-2 flex-shrink-0" />
             <div className="flex-grow mr-2">{message.text}</div>
             <button
+              type="button"
               onClick={() => removeMessage(message.id)}
               className="text-white hover:text-gray-100 focus:outline-none"
               aria-label="Close"

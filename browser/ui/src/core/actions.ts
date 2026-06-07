@@ -1,7 +1,8 @@
 import type { Dispatch } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { focusId } from "./focus";
 import type { PushNotification } from "../components/NotificationProvider";
+import { isMarkdownCell } from "./cells";
+import { focusId } from "./focus";
 import type { SendCommand } from "./messages";
 import {
   type EditorCell,
@@ -15,7 +16,7 @@ import {
   type RunId,
 } from "./notebook";
 import type { InsertType, State, StateAction } from "./state";
-import { isMarkdownCell } from "./cells";
+import { nonNull } from "./util";
 
 export function newRun(
   notebook: Notebook,
@@ -49,7 +50,7 @@ export function extractRunNode(
   if (node.type === "Cell") {
     return node;
   }
-  const child = node.children.find((c) => c.id === path[0])!;
+  const child = nonNull(node.children.find((c) => c.id === path[0]));
   return {
     name: node.name,
     id: node.id,
@@ -73,7 +74,7 @@ export function runCode(
   if (run_id === null) {
     run_id = newRun(notebook, dispatch, send_command);
   } else {
-    const run = notebook.runs.find((r) => r.id === run_id)!;
+    const run = nonNull(notebook.runs.find((r) => r.id === run_id));
     if (
       run.kernel_state.type === "Crashed" ||
       run.kernel_state.type === "Closed"
@@ -271,7 +272,10 @@ export function findPathById(
   root: EditorNode,
   id: EditorNodeId,
 ): EditorNodeId[] | null {
-  const walk = (node: EditorNode, path: EditorNodeId[]): EditorNodeId[] | null => {
+  const walk = (
+    node: EditorNode,
+    path: EditorNodeId[],
+  ): EditorNodeId[] | null => {
     if (node.id === id) return path;
     if (node.type === "Group") {
       for (const c of node.children) {
@@ -330,7 +334,12 @@ export function moveCell(
 ) {
   const path = findPathById(notebook.editor_root, id);
   if (!path) return;
-  dispatch({ type: "move_editor_node", notebook_id: notebook.id, path, direction });
+  dispatch({
+    type: "move_editor_node",
+    notebook_id: notebook.id,
+    path,
+    direction,
+  });
 }
 
 export function deleteCell(
@@ -367,7 +376,11 @@ export function pasteCell(
 ) {
   if (!cellClipboard) return;
   const id = uuidv4();
-  const editor_node: EditorNode = { type: "Cell", id, code: cellClipboard.code };
+  const editor_node: EditorNode = {
+    type: "Cell",
+    id,
+    code: cellClipboard.code,
+  };
   const afterPath = afterId
     ? findPathById(notebook.editor_root, afterId)
     : null;

@@ -8,7 +8,9 @@ export const LanguageIcon: React.FC<{ language: Language; size?: number }> = ({
 }) => {
   switch (language) {
     case "Rust":
-      return <SiRust size={size} className="text-orange-600 dark:text-orange-400" />;
+      return (
+        <SiRust size={size} className="text-orange-600 dark:text-orange-400" />
+      );
     case "Python":
       return <SiPython size={size} className="text-blue-500" />;
     case "JavaScript":

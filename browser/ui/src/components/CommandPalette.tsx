@@ -15,7 +15,9 @@ const CommandPalette: React.FC<{
 
   const filtered = useMemo(() => {
     const ql = q.toLowerCase();
-    return commands.filter((c) => c.enabled && c.label.toLowerCase().includes(ql));
+    return commands.filter(
+      (c) => c.enabled && c.label.toLowerCase().includes(ql),
+    );
   }, [q, commands]);
 
   const clamped = Math.min(idx, Math.max(0, filtered.length - 1));
@@ -67,6 +69,7 @@ const CommandPalette: React.FC<{
           )}
           {filtered.map((c, i) => (
             <button
+              type="button"
               key={c.id}
               onMouseEnter={() => setIdx(i)}
               onClick={() => runAt(i)}

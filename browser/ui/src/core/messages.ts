@@ -1,4 +1,5 @@
 import type { Dispatch } from "react";
+import type { NotificationType } from "../components/NotificationProvider";
 import type {
   EditorGroupNode as EditorGroup,
   EditorNode,
@@ -12,7 +13,6 @@ import type {
   RunId,
 } from "./notebook";
 import type { DirEntry, StateAction } from "./state";
-import type { NotificationType } from "../components/NotificationProvider";
 
 export type SendCommand = (message: FromClientMessage) => void;
 

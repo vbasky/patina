@@ -1,14 +1,15 @@
+import { highlight, languages } from "prismjs/components/prism-core";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import {
   LuCircleAlert,
   LuCircleCheck,
-  LuClock,
   LuCirclePlay,
+  LuClock,
 } from "react-icons/lu";
-import type { EditorNode, OutputCell, OutputValue } from "../core/notebook";
 import Editor from "react-simple-code-editor";
-import { highlight, languages } from "prismjs/components/prism-core";
+import type { EditorNode, OutputCell, OutputValue } from "../core/notebook";
+import { nonNull } from "../core/util";
 import "prismjs/components/prism-python";
 import { useGlobalState } from "./StateProvider";
 
@@ -62,7 +63,7 @@ export const OutputValueView: React.FC<{ value: OutputValue }> = (props: {
   } else if (value.type === "Exception") {
     return (
       <pre className="text-left whitespace-pre-wrap font-mono text-xs leading-snug m-0 text-red-700 dark:text-red-400">
-        {value.value.message + "\n" + value.value.traceback}
+        {`${value.value.message}\n${value.value.traceback}`}
       </pre>
     );
   }
@@ -74,15 +75,16 @@ const OutputCellView: React.FC<{
   isLast: boolean;
 }> = (props: { cell: OutputCell; isLast: boolean }) => {
   const state = useGlobalState();
-  const notebook = state.selected_notebook!;
+  const notebook = nonNull(state.selected_notebook);
   const [showMetadata, setShowMetadata] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-scroll when new output values arrive
   useEffect(() => {
     if (ref.current && props.isLast) {
       ref.current.scrollIntoView({ behavior: "instant" });
     }
-  }, [props.cell.values]);
+  }, [props.cell.values, props.isLast]);
 
   // Get the appropriate icon based on status
   const getStatusIcon = () => {
@@ -130,6 +132,7 @@ const OutputCellView: React.FC<{
             {getStatusText()}
           </div>
           <button
+            type="button"
             onClick={() => setShowMetadata(!showMetadata)}
             className="flex items-center justify-center px-2 py-1 bg-gray-200 rounded text-xs font-medium hover:bg-gray-300 transition-colors"
             aria-label="Toggle metadata"

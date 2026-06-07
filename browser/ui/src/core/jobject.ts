@@ -1,5 +1,6 @@
 import type { SerializedGlobalsUpdate } from "./messages";
 import type { Globals } from "./notebook";
+import { nonNull } from "./util";
 
 export type JsonObjectId = number;
 
@@ -39,7 +40,7 @@ export function applyGlobalsUpdate(
 ): Globals {
   const variables = Object.entries(update.variables).map(([name, data]) => {
     if (data === null) {
-      return old_globals!.variables.find((x) => x[0] == name)!;
+      return nonNull(nonNull(old_globals).variables.find((x) => x[0] === name));
     } else {
       return [name, parseJsonObjectStruct(data)] as [string, JsonObjectStruct];
     }
@@ -75,7 +76,7 @@ export function applyGlobalsUpdate(
         id,
         applyGlobalsUpdate(
           up,
-          old_globals?.children.find((x) => x[0] == id)?.[1] ?? null,
+          old_globals?.children.find((x) => x[0] === id)?.[1] ?? null,
         ),
       ] as [string, Globals],
   );

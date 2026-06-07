@@ -8,6 +8,7 @@ import {
 } from "react-icons/lu";
 import { closeRun, forkRun, newRun } from "../core/actions";
 import type { Notebook, Run } from "../core/notebook";
+import { nonNull } from "../core/util";
 import { PopupMenu } from "./PopupMenu";
 import RunView from "./RunView";
 import { useDispatch } from "./StateProvider";
@@ -19,12 +20,13 @@ const RunMenu: React.FC<{ notebook: Notebook; run: Run }> = (props: {
   notebook: Notebook;
   run: Run;
 }) => {
-  const dispatch = useDispatch()!;
-  const sendCommand = useSendCommand()!;
+  const dispatch = useDispatch();
+  const sendCommand = useSendCommand();
   return (
     <PopupMenu
       createButton={(toggleMenu) => (
         <button
+          type="button"
           onClick={toggleMenu}
           className="flex items-center justify-center p-2 rounded-md hover:bg-gray-100 focus:outline-none"
           aria-label="Menu"
@@ -92,6 +94,7 @@ const RunMenu: React.FC<{ notebook: Notebook; run: Run }> = (props: {
         <div className="absolute right-0 w-64 mt-2 origin-top-right bg-white border border-gray-200 divide-y divide-gray-100 rounded-md shadow-lg z-10">
           <div className="py-1">
             <button
+              type="button"
               className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
               onClick={handleInterrupt}
               disabled={!isComputing}
@@ -100,6 +103,7 @@ const RunMenu: React.FC<{ notebook: Notebook; run: Run }> = (props: {
               Interrupt computation
             </button>
             <button
+              type="button"
               className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
               onClick={handleStop}
               disabled={!isComputing}
@@ -119,6 +123,7 @@ const TabCloseButton: React.FC<{
 }> = ({ onClick }) => {
   return (
     <button
+      type="button"
       className="p-1 rounded-full text-orange-800 hover:text-orange-700 hover:bg-orange-200"
       onClick={onClick}
       aria-label="Close tab"
@@ -132,7 +137,7 @@ const ViewSwitch: React.FC<{ notebook: Notebook; run: Run }> = (props: {
   notebook: Notebook;
   run: Run;
 }) => {
-  const dispatch = useDispatch()!;
+  const dispatch = useDispatch();
   const view_mode = props.run.view_mode;
 
   return (
@@ -195,10 +200,12 @@ const ViewSwitch: React.FC<{ notebook: Notebook; run: Run }> = (props: {
 const RunTabs: React.FC<{ notebook: Notebook }> = (props: {
   notebook: Notebook;
 }) => {
-  const dispatch = useDispatch()!;
-  const sendCommand = useSendCommand()!;
+  const dispatch = useDispatch();
+  const sendCommand = useSendCommand();
   const notebook = props.notebook;
-  const run = notebook.runs.find((r) => r.id === notebook.current_run_id)!;
+  const run = nonNull(
+    notebook.runs.find((r) => r.id === notebook.current_run_id),
+  );
   return (
     <div className="flex flex-col h-full">
       <div className="flex justify-start bg-white">
@@ -233,6 +240,7 @@ const RunTabs: React.FC<{ notebook: Notebook }> = (props: {
           </div>
         ))}
         <button
+          type="button"
           key="new-run"
           onClick={() => {
             newRun(notebook, dispatch, sendCommand);

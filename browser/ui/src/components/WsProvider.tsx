@@ -1,12 +1,22 @@
-import { createContext, type JSX, useContext, useEffect, useState } from "react";
-import { processMessage, type SendCommand, type ToClientMessage } from "../core/messages";
+import Cookies from "js-cookie";
+import {
+  createContext,
+  type JSX,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import type { SendJsonMessage } from "react-use-websocket/dist/lib/types";
-import { useDispatch } from "./StateProvider";
+import {
+  processMessage,
+  type SendCommand,
+  type ToClientMessage,
+} from "../core/messages";
 import ErrorScreen from "./ErrorScreen";
 import LoadingScreen from "./LoadingScreen";
 import { usePushNotification } from "./NotificationProvider";
-import Cookies from "js-cookie";
+import { useDispatch } from "./StateProvider";
 
 const WsContext = createContext<SendJsonMessage | null>(null);
 
@@ -20,7 +30,7 @@ export const WsProvider = (props: { children: JSX.Element }) => {
   const pushNotification = usePushNotification();
   const [error, setError] = useState<string | null>(null);
   //    const [error, setError] = useState<string | null>(null);
-  const dispatch = useDispatch()!;
+  const dispatch = useDispatch();
   const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket(
     window.SERVER_URL,
     {
@@ -29,6 +39,7 @@ export const WsProvider = (props: { children: JSX.Element }) => {
     },
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs only on connection-state change
   useEffect(() => {
     console.log("Connection state changed", readyState);
     if (readyState === ReadyState.CLOSED) {
@@ -56,7 +67,7 @@ export const WsProvider = (props: { children: JSX.Element }) => {
     console.log("Got a new message: ", lastJsonMessage);
     const message = lastJsonMessage as ToClientMessage;
     processMessage(message, dispatch, pushNotification);
-  }, [lastJsonMessage]);
+  }, [lastJsonMessage, dispatch, pushNotification]);
 
   if (error !== null) {
     return <ErrorScreen title="Error" message={error} />;
@@ -73,6 +84,10 @@ export const WsProvider = (props: { children: JSX.Element }) => {
   );
 };
 
-export function useSendCommand(): SendCommand | null {
-  return useContext(WsContext);
+export function useSendCommand(): SendCommand {
+  const send = useContext(WsContext);
+  if (!send) {
+    throw new Error("useSendCommand must be used within a WsProvider");
+  }
+  return send;
 }

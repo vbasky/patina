@@ -82,16 +82,62 @@ export function buildMenus(ctx: CmdCtx): CommandMenu[] {
     {
       menu: "Edit",
       items: [
-        cmd("edit.cut", "Cut Cell", hasSel, () => nb && sel && cutCell(nb, sel, ctx.dispatch), "X"),
-        cmd("edit.copy", "Copy Cell", hasSel, () => nb && sel && copyCell(nb, sel), "C"),
-        cmd("edit.paste", "Paste Cell Below", hasNb, () => nb && pasteCell(nb, sel, ctx.dispatch), "V"),
-        cmd("edit.delete", "Delete Cell", hasSel, () => nb && sel && deleteCell(nb, sel, ctx.dispatch), "D D"),
+        cmd(
+          "edit.cut",
+          "Cut Cell",
+          hasSel,
+          () => nb && sel && cutCell(nb, sel, ctx.dispatch),
+          "X",
+        ),
+        cmd(
+          "edit.copy",
+          "Copy Cell",
+          hasSel,
+          () => nb && sel && copyCell(nb, sel),
+          "C",
+        ),
+        cmd(
+          "edit.paste",
+          "Paste Cell Below",
+          hasNb,
+          () => nb && pasteCell(nb, sel, ctx.dispatch),
+          "V",
+        ),
+        cmd(
+          "edit.delete",
+          "Delete Cell",
+          hasSel,
+          () => nb && sel && deleteCell(nb, sel, ctx.dispatch),
+          "D D",
+        ),
         "separator",
-        cmd("edit.up", "Move Cell Up", hasSel, () => nb && sel && moveCell(nb, sel, "up", ctx.dispatch), "⌃↑"),
-        cmd("edit.down", "Move Cell Down", hasSel, () => nb && sel && moveCell(nb, sel, "down", ctx.dispatch), "⌃↓"),
+        cmd(
+          "edit.up",
+          "Move Cell Up",
+          hasSel,
+          () => nb && sel && moveCell(nb, sel, "up", ctx.dispatch),
+          "⌃↑",
+        ),
+        cmd(
+          "edit.down",
+          "Move Cell Down",
+          hasSel,
+          () => nb && sel && moveCell(nb, sel, "down", ctx.dispatch),
+          "⌃↓",
+        ),
         "separator",
-        cmd("edit.insertCode", "Insert Code Cell", hasNb, () => nb && insertCell(nb, sel, false, ctx.dispatch)),
-        cmd("edit.insertMd", "Insert Markdown Cell", hasNb, () => nb && insertCell(nb, sel, true, ctx.dispatch)),
+        cmd(
+          "edit.insertCode",
+          "Insert Code Cell",
+          hasNb,
+          () => nb && insertCell(nb, sel, false, ctx.dispatch),
+        ),
+        cmd(
+          "edit.insertMd",
+          "Insert Markdown Cell",
+          hasNb,
+          () => nb && insertCell(nb, sel, true, ctx.dispatch),
+        ),
       ],
     },
     {
@@ -101,25 +147,65 @@ export function buildMenus(ctx: CmdCtx): CommandMenu[] {
           "run.selected",
           "Run Selected Cell",
           hasSel,
-          () => nb && sel && runCellById(nb, sel, ctx.dispatch, ctx.sendCommand, ctx.pushNotification),
+          () =>
+            nb &&
+            sel &&
+            runCellById(
+              nb,
+              sel,
+              ctx.dispatch,
+              ctx.sendCommand,
+              ctx.pushNotification,
+            ),
           "⌃⏎",
         ),
-        cmd("run.all", "Run All Cells", hasNb, () => nb && runAll(nb, ctx.dispatch, ctx.sendCommand, ctx.pushNotification)),
+        cmd(
+          "run.all",
+          "Run All Cells",
+          hasNb,
+          () =>
+            nb &&
+            runAll(nb, ctx.dispatch, ctx.sendCommand, ctx.pushNotification),
+        ),
         "separator",
-        cmd("run.clear", "Clear All Outputs", hasRun, () => nb && ctx.run && clearOutputs(nb.id, ctx.run.id, ctx.dispatch)),
+        cmd(
+          "run.clear",
+          "Clear All Outputs",
+          hasRun,
+          () => nb && ctx.run && clearOutputs(nb.id, ctx.run.id, ctx.dispatch),
+        ),
       ],
     },
     {
       menu: "Kernel",
       items: [
-        cmd("kernel.restart", "Restart Kernel", hasNb, () => nb && newRun(nb, ctx.dispatch, ctx.sendCommand)),
-        cmd("kernel.stop", "Stop Kernel", hasRun, () => nb && ctx.run && closeRun(nb.id, ctx.run.id, ctx.dispatch, ctx.sendCommand)),
+        cmd(
+          "kernel.restart",
+          "Restart Kernel",
+          hasNb,
+          () => nb && newRun(nb, ctx.dispatch, ctx.sendCommand),
+        ),
+        cmd(
+          "kernel.stop",
+          "Stop Kernel",
+          hasRun,
+          () =>
+            nb &&
+            ctx.run &&
+            closeRun(nb.id, ctx.run.id, ctx.dispatch, ctx.sendCommand),
+        ),
       ],
     },
     {
       menu: "View",
       items: [
-        cmd("view.palette", "Command Palette…", true, ctx.ui.openPalette, "⌘⇧C"),
+        cmd(
+          "view.palette",
+          "Command Palette…",
+          true,
+          ctx.ui.openPalette,
+          "⌘⇧C",
+        ),
         cmd("view.theme", "Switch Theme (System/Light/Dark)", true, () => {
           cycleTheme();
           ctx.ui.rerender();

@@ -1,7 +1,7 @@
-import { LuBan, LuSquare } from "react-icons/lu";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { TbRowInsertBottom, TbRowInsertTop, TbArrowFork } from "react-icons/tb";
+import { LuBan, LuSquare } from "react-icons/lu";
 import { PiTreeView } from "react-icons/pi";
+import { TbArrowFork, TbRowInsertBottom, TbRowInsertTop } from "react-icons/tb";
 
 type Icon =
   | "ban"
@@ -75,7 +75,10 @@ export const PopupMenu = (props: {
                 setIsOpen(false);
               }}
             >
-              <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900">
+              <button
+                type="button"
+                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+              >
                 {getIcon(e.icon)}
                 {e.title}
               </button>

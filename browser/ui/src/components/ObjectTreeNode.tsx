@@ -1,17 +1,18 @@
 import type React from "react";
 import {
-  LuChevronRight,
-  LuChevronDown,
   LuBox,
+  LuBraces,
   LuBrackets,
-  LuSquare,
+  LuChevronDown,
+  LuChevronRight,
+  LuCog,
   LuCopyright,
   LuParentheses,
-  LuBraces,
-  LuCog,
+  LuSquare,
 } from "react-icons/lu";
 import { VscCircle } from "react-icons/vsc";
 import type { JsonObjectId, JsonObjectStruct } from "../core/jobject";
+import { nonNull } from "../core/util";
 
 // Tree Node Component
 const ObjectTreeNode: React.FC<{
@@ -31,7 +32,7 @@ const ObjectTreeNode: React.FC<{
   openObjects,
   toggleOpenObject,
 }) => {
-  const object = struct.objects.get(id)!;
+  const object = nonNull(struct.objects.get(id));
   const isOpen = openObjects.has(slotPath);
   //const indent = `ml-${depth * 4}`;
 
@@ -101,7 +102,7 @@ const ObjectTreeNode: React.FC<{
   // Render children
   const renderChildren = () => {
     if (!hasChildren || !isOpen) return null;
-    return object.children!.map(([slotName, child]) => (
+    return nonNull(object.children).map(([slotName, child]) => (
       <ObjectTreeNode
         key={slotName}
         slotName={slotName}
@@ -120,6 +121,7 @@ const ObjectTreeNode: React.FC<{
       <div className={"flex items-center py-1 hover:bg-gray-50"}>
         {hasChildren ? (
           <button
+            type="button"
             onClick={() => toggleOpenObject(slotPath)}
             className="mr-1 focus:outline-none"
           >

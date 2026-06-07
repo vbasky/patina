@@ -9,18 +9,18 @@ interface ModalProps {
 }
 
 const ModalDialog: React.FC<ModalProps> = ({ config }) => {
-  const [inputValue, setInputValue] = useState(config?.value);
-  const dispatch = useDispatch()!;
+  const [inputValue, setInputValue] = useState(config?.value ?? "");
+  const dispatch = useDispatch();
   const ref = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (ref.current) {
       ref.current.focus();
     }
-  }, [ref]);
+  }, []);
 
   const handleConfirm = () => {
-    config.onConfirm(inputValue!);
+    config.onConfirm(inputValue);
     setInputValue("");
     dispatch({
       type: "set_dialog",
@@ -37,7 +37,7 @@ const ModalDialog: React.FC<ModalProps> = ({ config }) => {
     });
   };
 
-  const isDisabled = inputValue.length == 0;
+  const isDisabled = inputValue.length === 0;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -46,6 +46,7 @@ const ModalDialog: React.FC<ModalProps> = ({ config }) => {
         <div className="flex justify-between items-center p-4">
           <h2 className="text-xl font-bold">{config.title}</h2>
           <button
+            type="button"
             onClick={handleCancel}
             className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none"
             aria-label="Close"
@@ -69,12 +70,14 @@ const ModalDialog: React.FC<ModalProps> = ({ config }) => {
         {/* Footer */}
         <div className="flex justify-end space-x-3 p-4 bg-gray-50 dark:bg-[#2d2d2d] rounded-b-lg">
           <button
+            type="button"
             onClick={handleCancel}
             className="px-4 py-2 border border-gray-300 dark:border-[#3a3a3a] text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-[#3a3a3a] focus:outline-none focus:ring-2 focus:ring-gray-500"
           >
             Cancel
           </button>
           <button
+            type="button"
             disabled={isDisabled}
             onClick={handleConfirm}
             className={`px-4 py-2 text-white rounded-md ${isDisabled ? "bg-gray-300 dark:bg-[#3a3a3a] dark:text-gray-500" : "bg-blue-600 hover:bg-blue-700"} focus:outline-none focus:ring-2 focus:ring-blue-500`}

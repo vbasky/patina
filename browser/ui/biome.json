@@ -16,15 +16,15 @@
   },
   "assist": {
     "enabled": true,
-    "actions": { "source": { "organizeImports": "off" } }
+    "actions": { "source": { "organizeImports": "on" } }
   },
   "linter": {
     "enabled": true,
     "rules": {
       "recommended": true,
-      "style": { "noNonNullAssertion": "off" },
       "security": { "noDangerouslySetInnerHtml": "off" },
       "complexity": { "noImportantStyles": "off" },
+      "suspicious": { "noArrayIndexKey": "off" },
       "a11y": {
         "useKeyWithClickEvents": "off",
         "noStaticElementInteractions": "off"

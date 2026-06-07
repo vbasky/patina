@@ -13,13 +13,14 @@ const Scope: React.FC<{
     <>
       {globals.children.map(([id, scope]) => {
         const hasChildren = scope.children.length + scope.variables.length > 0;
-        const childSlotPath = slotPath + "/" + id;
+        const childSlotPath = `${slotPath}/${id}`;
         const isOpen = openObjects.has(childSlotPath);
         return (
           <div key={id}>
             <div className={`flex items-center py-1 "hover:bg-gray-50"}`}>
               {hasChildren ? (
                 <button
+                  type="button"
                   onClick={() => toggleOpenObject(childSlotPath)}
                   className="mr-1 focus:outline-none"
                 >
@@ -55,7 +56,7 @@ const Scope: React.FC<{
           id={struct.root}
           slotName={name}
           depth={0}
-          slotPath={slotPath + ":" + name}
+          slotPath={`${slotPath}:${name}`}
           openObjects={openObjects}
           toggleOpenObject={toggleOpenObject}
         />
@@ -68,7 +69,7 @@ const Workspace: React.FC<{ notebook_id: NotebookId; run: Run }> = ({
   notebook_id,
   run,
 }) => {
-  const dispatch = useDispatch()!;
+  const dispatch = useDispatch();
   const toggleOpenObject = (object_path: string) => {
     dispatch({
       type: "toggle_open_object",

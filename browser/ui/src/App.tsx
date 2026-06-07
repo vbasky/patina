@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "./App.css";
+import Cookies from "js-cookie";
 import GlobalTabs from "./components/GlobalTabs";
 import {
   NotificationProvider,
@@ -7,7 +8,6 @@ import {
 } from "./components/NotificationProvider";
 import { StateProvider } from "./components/StateProvider";
 import { WsProvider } from "./components/WsProvider";
-import Cookies from "js-cookie";
 
 function App() {
   const [tokenChecked, setTokenChecked] = useState<boolean>(false);

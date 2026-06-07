@@ -36,8 +36,8 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({
   onClose,
 }) => {
   const state = useGlobalState();
-  const dispatch = useDispatch()!;
-  const sendCommand = useSendCommand()!;
+  const dispatch = useDispatch();
+  const sendCommand = useSendCommand();
   const [rust, setRust] = useState(state.settings.rust_toolchain ?? "");
   const [python, setPython] = useState(state.settings.python ?? "");
   const [node, setNode] = useState(state.settings.node ?? "");
@@ -70,8 +70,8 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({
 
         <div className="space-y-4 px-4 pb-2">
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            Point each kernel at a specific toolchain. Applied to the next kernel
-            started (restart a running one). Leave blank to auto-detect.
+            Point each kernel at a specific toolchain. Applied to the next
+            kernel started (restart a running one). Leave blank to auto-detect.
           </p>
           <Field
             label="Rust toolchain"

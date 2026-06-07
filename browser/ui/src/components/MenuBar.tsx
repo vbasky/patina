@@ -12,6 +12,7 @@ const MenuBar: React.FC<{ menus: CommandMenu[] }> = ({ menus }) => {
       {menus.map((m) => (
         <div key={m.menu} className="relative">
           <button
+            type="button"
             className={`rounded px-3 py-1.5 hover:bg-gray-200 dark:hover:bg-[#2d2d2d] ${
               open === m.menu ? "bg-gray-200 dark:bg-[#2d2d2d]" : ""
             }`}
@@ -30,6 +31,7 @@ const MenuBar: React.FC<{ menus: CommandMenu[] }> = ({ menus }) => {
                   />
                 ) : (
                   <button
+                    type="button"
                     key={it.id || i}
                     disabled={!it.enabled}
                     onClick={() => {
@@ -40,7 +42,9 @@ const MenuBar: React.FC<{ menus: CommandMenu[] }> = ({ menus }) => {
                   >
                     <span>{it.label}</span>
                     {it.shortcut && (
-                      <span className="text-xs text-gray-400">{it.shortcut}</span>
+                      <span className="text-xs text-gray-400">
+                        {it.shortcut}
+                      </span>
                     )}
                   </button>
                 ),

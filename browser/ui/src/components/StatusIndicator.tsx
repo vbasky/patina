@@ -1,5 +1,5 @@
 import type React from "react";
-import { LuLoaderCircle, LuX, LuCircle } from "react-icons/lu";
+import { LuCircle, LuLoaderCircle, LuX } from "react-icons/lu";
 import type { KernelState } from "../core/notebook";
 
 interface StatusIndicatorProps {
@@ -41,7 +41,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({ status }) => {
   };
   const config = statusConfig[status.type];
   if (!config) {
-    return <></>;
+    return null;
   }
   let message = null;
   if (status.type === "Crashed") {

@@ -9,8 +9,13 @@ import {
   type OutputCell,
   type Run,
 } from "../core/notebook";
+import { nonNull } from "../core/util";
 
 const LANGUAGES: Language[] = ["Rust", "Python", "JavaScript"];
+
+import { marked } from "marked";
+import type React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   LuChevronDown,
   LuChevronRight,
@@ -26,9 +31,10 @@ import {
   LuText,
   LuTrash2,
 } from "react-icons/lu";
-import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { isMarkdownCell, markdownSource, toCode, toMarkdown } from "../core/cells";
+import { TbCircleDashed } from "react-icons/tb";
+
+import Editor from "react-simple-code-editor";
+import { v4 as uuidv4 } from "uuid";
 import {
   newEditorCode,
   newEditorGroup,
@@ -36,19 +42,20 @@ import {
   runCode,
   saveNotebook,
 } from "../core/actions";
-
-import Editor from "react-simple-code-editor";
-import { LanguageIcon } from "./LanguageIcon";
-import { NodeToolbar } from "./EditorToolbar";
-import { OutputValueView } from "./OutputCell";
-import { TbCircleDashed } from "react-icons/tb";
+import {
+  isMarkdownCell,
+  markdownSource,
+  toCode,
+  toMarkdown,
+} from "../core/cells";
 import { focusId } from "../core/focus";
 import { highlightInline } from "../core/highlighter";
-import { marked } from "marked";
-import { useDispatch } from "./StateProvider";
+import { NodeToolbar } from "./EditorToolbar";
+import { LanguageIcon } from "./LanguageIcon";
 import { usePushNotification } from "./NotificationProvider";
+import { OutputValueView } from "./OutputCell";
+import { useDispatch } from "./StateProvider";
 import { useSendCommand } from "./WsProvider";
-import { v4 as uuidv4 } from "uuid";
 
 function latestOutputFor(
   run: Run | null,
@@ -89,7 +96,9 @@ const InlineOutput: React.FC<{ cell: OutputCell; execCount: number }> = ({
       case "Pending":
         return <LuClock className="text-blue-400" size={13} />;
       case "Running":
-        return <LuLoaderCircle className="animate-spin text-blue-500" size={13} />;
+        return (
+          <LuLoaderCircle className="animate-spin text-blue-500" size={13} />
+        );
       case "Fail":
         return <LuCircleAlert className="text-red-500" size={13} />;
       default:
@@ -154,11 +163,11 @@ const EditorNamedNodeRenderer: React.FC<{
   depth: number;
   orderedNodes: EditorNode[];
 }> = ({ notebook, run, path, node, depth, orderedNodes }) => {
-  const dispatch = useDispatch()!;
-  const sendCommand = useSendCommand()!;
+  const dispatch = useDispatch();
+  const sendCommand = useSendCommand();
   const pushNotification = usePushNotification();
 
-  const isSelected = notebook.selected_editor_node_id == node.id;
+  const isSelected = notebook.selected_editor_node_id === node.id;
   const isOpen = notebook.editor_open_nodes.has(node.id);
   return (
     <div className="w-full my-1">
@@ -222,7 +231,11 @@ const EditorNamedNodeRenderer: React.FC<{
               });
             }}
           >
-            {isOpen ? <LuChevronDown size={16} /> : <LuChevronRight size={16} />}
+            {isOpen ? (
+              <LuChevronDown size={16} />
+            ) : (
+              <LuChevronRight size={16} />
+            )}
           </button>
           {node.scope === EditorScope.Own && depth > 0 && (
             <div className="mr-1 text-purple-400">
@@ -245,7 +258,7 @@ const EditorNamedNodeRenderer: React.FC<{
       </div>
       {isOpen && (
         <div className="ml-2">
-          {node.children.length == 0 && (
+          {node.children.length === 0 && (
             <div className="flex ml-5">
               <div className="italic mr-3">Group is empty</div>
               <NodeButton2
@@ -332,7 +345,7 @@ function move(node: EditorNode, orderedNodes: EditorNode[], is_up: boolean) {
     idx += 1;
   }
   const newId = orderedNodes[idx].id;
-  const element = document.getElementById(newId)!;
+  const element = nonNull(document.getElementById(newId));
   const textArea = element.getElementsByTagName("textarea")[0];
   if (textArea) {
     textArea.focus();
@@ -350,10 +363,10 @@ const EditorCellRenderer: React.FC<{
   cell: EditorCell;
   orderedNodes: EditorNode[];
 }> = ({ notebook, run, path, cell, orderedNodes }) => {
-  const dispatch = useDispatch()!;
-  const sendCommand = useSendCommand()!;
+  const dispatch = useDispatch();
+  const sendCommand = useSendCommand();
   const pushNotification = usePushNotification();
-  const isSelected = notebook.selected_editor_node_id == cell.id;
+  const isSelected = notebook.selected_editor_node_id === cell.id;
   const isMd = isMarkdownCell(cell.code);
   const output = latestOutputFor(run, cell.id);
   // Syntax-highlight fenced code blocks inside rendered markdown (marked emits
@@ -422,11 +435,11 @@ const EditorCellRenderer: React.FC<{
 
   // Rendered markdown view (not selected) — click to edit.
   if (isMd && !isSelected) {
-    const html = marked.parse(markdownSource(cell.code) || "*empty markdown*") as string;
+    const html = marked.parse(
+      markdownSource(cell.code) || "*empty markdown*",
+    ) as string;
     return (
-      <div
-        className={`relative border-l-6 border-transparent pl-1`}
-      >
+      <div className={`relative border-l-6 border-transparent pl-1`}>
         <div
           ref={mdRef}
           className="patina-md cursor-text rounded px-3 py-2 hover:bg-gray-50 dark:text-gray-100 dark:hover:bg-[#2d2d2d]"
@@ -469,7 +482,7 @@ const EditorCellRenderer: React.FC<{
               editor_node_id: cell.id,
             })
           }
-          onBlur={() => { }}
+          onBlur={() => {}}
           id={cell.id}
           value={cell.code}
           onValueChange={(code) => {
@@ -507,7 +520,11 @@ const EditorCellRenderer: React.FC<{
           <div className="flex items-center gap-2">
             <button
               type="button"
-              title={isMd ? "Render (Ctrl/Shift+Enter)" : "Run cell (Ctrl/Shift+Enter)"}
+              title={
+                isMd
+                  ? "Render (Ctrl/Shift+Enter)"
+                  : "Run cell (Ctrl/Shift+Enter)"
+              }
               onClick={runThis}
               className="inline-flex items-center font-medium text-gray-600 hover:text-green-700 dark:text-gray-300 dark:hover:text-green-400"
             >
@@ -562,8 +579,8 @@ const EditorPanel: React.FC<{ notebook: Notebook; run: Run | null }> = ({
   notebook,
   run,
 }) => {
-  const dispatch = useDispatch()!;
-  const sendCommand = useSendCommand()!;
+  const dispatch = useDispatch();
+  const sendCommand = useSendCommand();
   const onSave = useCallback(() => {
     saveNotebook(notebook, dispatch, sendCommand);
   }, [notebook, dispatch, sendCommand]);

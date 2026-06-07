@@ -1,15 +1,21 @@
 import { useEffect, useReducer, useState } from "react";
-import NotebookList from "./DirList";
-import { useDispatch, useGlobalState } from "./StateProvider";
-import NotebookView from "./NotebookView";
-import { LuMonitor, LuMoon, LuNotebook, LuPanelLeft, LuSun } from "react-icons/lu";
-import Dialog from "./Dialog";
-import MenuBar from "./MenuBar";
-import CommandPalette from "./CommandPalette";
+import {
+  LuMonitor,
+  LuMoon,
+  LuNotebook,
+  LuPanelLeft,
+  LuSun,
+} from "react-icons/lu";
 import { buildMenus, flattenCommands } from "../core/commands";
-import { usePushNotification } from "./NotificationProvider";
-import { useSendCommand } from "./WsProvider";
 import { cycleTheme, getThemeMode, onThemeChange } from "../core/theme";
+import CommandPalette from "./CommandPalette";
+import Dialog from "./Dialog";
+import NotebookList from "./DirList";
+import MenuBar from "./MenuBar";
+import NotebookView from "./NotebookView";
+import { usePushNotification } from "./NotificationProvider";
+import { useDispatch, useGlobalState } from "./StateProvider";
+import { useSendCommand } from "./WsProvider";
 
 const NotebookTab = (props: {
   active: boolean;
@@ -17,6 +23,7 @@ const NotebookTab = (props: {
   onClick: () => void;
 }) => (
   <button
+    type="button"
     onClick={props.onClick}
     className={`group relative flex items-center gap-2 border-r border-gray-200 px-4 py-2 text-sm transition-colors dark:border-[#3a3a3a] ${
       props.active
@@ -68,8 +75,8 @@ const ThemeToggle = () => {
 
 const GlobalTabs = () => {
   const state = useGlobalState();
-  const dispatch = useDispatch()!;
-  const sendCommand = useSendCommand()!;
+  const dispatch = useDispatch();
+  const sendCommand = useSendCommand();
   const pushNotification = usePushNotification();
   const [showNotebookList, setShowNotebookList] = useState<boolean>(true);
   const [palette, setPalette] = useState<boolean>(false);
@@ -132,6 +139,7 @@ const GlobalTabs = () => {
       {/* Tab bar */}
       <div className="flex items-stretch border-b border-gray-200 bg-gray-100 dark:border-[#3a3a3a] dark:bg-[#252526]">
         <button
+          type="button"
           onClick={() => setShowNotebookList((v) => !v)}
           title="Toggle sidebar"
           className={`px-3 py-2 text-gray-500 transition-colors hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-[#2d2d2d] ${
@@ -160,7 +168,13 @@ const GlobalTabs = () => {
         {showNotebookList && <NotebookList />}
         {state.selected_notebook === null ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 text-gray-400">
-            <img src="/patina.svg" width={64} height={64} alt="" className="opacity-80" />
+            <img
+              src="/patina.svg"
+              width={64}
+              height={64}
+              alt=""
+              className="opacity-80"
+            />
             <div className="text-sm">Select a notebook to get started</div>
           </div>
         ) : (

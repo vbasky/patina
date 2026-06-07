@@ -37,8 +37,8 @@ function kernelBadge(state: KernelState | null): {
 }
 
 const NotebookView: React.FC<{ notebook: Notebook }> = ({ notebook }) => {
-  const dispatch = useDispatch()!;
-  const sendCommand = useSendCommand()!;
+  const dispatch = useDispatch();
+  const sendCommand = useSendCommand();
   const pushNotification = usePushNotification();
   const [showGlobals, setShowGlobals] = useState(false);
 
@@ -77,16 +77,18 @@ const NotebookView: React.FC<{ notebook: Notebook }> = ({ notebook }) => {
           {badge.label}
         </span>
         <button
-          onClick={() => runAll(notebook, dispatch, sendCommand, pushNotification)}
+          type="button"
+          onClick={() =>
+            runAll(notebook, dispatch, sendCommand, pushNotification)
+          }
           title="Run all cells"
           className={toolBtn}
         >
           <LuPlay size={14} /> Run all
         </button>
         <button
-          onClick={() =>
-            run && clearOutputs(notebook.id, run.id, dispatch)
-          }
+          type="button"
+          onClick={() => run && clearOutputs(notebook.id, run.id, dispatch)}
           disabled={!run}
           title="Clear all outputs"
           className={toolBtn}
@@ -94,7 +96,10 @@ const NotebookView: React.FC<{ notebook: Notebook }> = ({ notebook }) => {
           <LuEraser size={14} /> Clear
         </button>
         <button
-          onClick={() => run && closeRun(notebook.id, run.id, dispatch, sendCommand)}
+          type="button"
+          onClick={() =>
+            run && closeRun(notebook.id, run.id, dispatch, sendCommand)
+          }
           disabled={!run}
           title="Stop kernel"
           className={toolBtn}
@@ -102,6 +107,7 @@ const NotebookView: React.FC<{ notebook: Notebook }> = ({ notebook }) => {
           <LuSquare size={14} /> Stop
         </button>
         <button
+          type="button"
           onClick={() => newRun(notebook, dispatch, sendCommand)}
           title="Restart kernel (new run)"
           className={toolBtn}
@@ -110,6 +116,7 @@ const NotebookView: React.FC<{ notebook: Notebook }> = ({ notebook }) => {
         </button>
         <div className="flex-1" />
         <button
+          type="button"
           onClick={() => setShowGlobals((v) => !v)}
           title="Toggle variables"
           className={`inline-flex items-center gap-1 rounded px-2 py-1 text-sm ${

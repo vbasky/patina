@@ -4,8 +4,8 @@
 import { createHighlighterCoreSync, type HighlighterCore } from "shiki/core";
 import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 import rust from "shiki/langs/rust.mjs";
-import githubLight from "shiki/themes/github-light.mjs";
 import githubDark from "shiki/themes/github-dark.mjs";
+import githubLight from "shiki/themes/github-light.mjs";
 import { isDark } from "./theme";
 
 const hl: HighlighterCore = createHighlighterCoreSync({
@@ -29,7 +29,7 @@ export function highlightInline(code: string, lang = "rust"): string {
   const language = loadedLangs.has(lang) ? lang : null;
   if (!language) return esc(code);
   const theme = isDark() ? "github-dark" : "github-light";
-  let lines;
+  let lines: ReturnType<typeof hl.codeToTokens>["tokens"];
   try {
     lines = hl.codeToTokens(code, { lang: language, theme }).tokens;
   } catch {
