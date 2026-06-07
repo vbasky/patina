@@ -32,6 +32,14 @@ fn main() {
         tune_build_speed();
     }
 
+    // Render polars DataFrames with ASCII box chars (the inherited eval process
+    // reads this): they're in every monospace font's latin set, so tables align
+    // even when the UI font lacks Unicode box-drawing glyphs. Respect a user override.
+    if std::env::var_os("POLARS_FMT_TABLE_FORMATTING").is_none() {
+        // SAFETY: called early in main, before any threads are spawned.
+        unsafe { std::env::set_var("POLARS_FMT_TABLE_FORMATTING", "ASCII_FULL_CONDENSED") };
+    }
+
     // evcxr runs rust-analyzer in-process, which is extremely chatty at INFO.
     // Default to WARN; honor RUST_LOG if the user wants more.
     let _ = tracing_subscriber::fmt()

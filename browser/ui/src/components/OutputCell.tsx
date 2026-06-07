@@ -54,7 +54,7 @@ export const OutputValueView: React.FC<{ value: OutputValue }> = (props: {
   }
   if (value.type === "Text") {
     return (
-      <pre className="text-left whitespace-pre-wrap font-mono text-xs leading-snug m-0 text-gray-800 dark:text-gray-200">
+      <pre className="m-0 overflow-x-auto whitespace-pre text-left font-mono text-xs leading-snug text-gray-800 dark:text-gray-200">
         {value.value}
       </pre>
     );
@@ -62,7 +62,7 @@ export const OutputValueView: React.FC<{ value: OutputValue }> = (props: {
     return <div dangerouslySetInnerHTML={{ __html: value.value }} />;
   } else if (value.type === "Exception") {
     return (
-      <pre className="text-left whitespace-pre-wrap font-mono text-xs leading-snug m-0 text-red-700 dark:text-red-400">
+      <pre className="m-0 overflow-x-auto whitespace-pre text-left font-mono text-xs leading-snug text-red-700 dark:text-red-400">
         {`${value.value.message}\n${value.value.traceback}`}
       </pre>
     );
