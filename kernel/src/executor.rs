@@ -23,6 +23,15 @@ fn patina_svg(svg: &str) {
 }
 "#;
 
+/// Whether to preload the batteries-included crates. On unless `PATINA_BATTERIES`
+/// is set to a falsy value.
+fn batteries_enabled() -> bool {
+    !matches!(
+        std::env::var("PATINA_BATTERIES").as_deref(),
+        Ok("0") | Ok("off") | Ok("false")
+    )
+}
+
 /// Spin up the evcxr context on a dedicated thread (it is not `Send` and its
 /// `eval` blocks while cargo/rustc compiles), draining its stdout/stderr to the
 /// server as it runs.
@@ -50,6 +59,21 @@ pub fn spawn_executor(
         // (dataframes). e.g. `patina_svg(&svg_string)` for a plotters chart, or
         // `patina_html(&html)` for any HTML table.
         let _ = context.execute(PRELUDE);
+
+        // Batteries-included: preload common data crates so cells can `use` them
+        // with no `:dep`. Compiled once at startup (sccache caches across
+        // restarts). On by default; set PATINA_BATTERIES=0 for a faster start.
+        if batteries_enabled() {
+            for dep in [
+                r#":dep ndarray = "0.16""#,
+                r#":dep plotters = { version = "^0.3", default-features = true, features = ["evcxr"] }"#,
+                r#":dep polars = { version = "0.46", features = ["fmt", "lazy"] }"#,
+            ] {
+                if let Err(e) = context.execute(dep) {
+                    eprintln!("patina-kernel: preload failed for `{dep}`: {e}");
+                }
+            }
+        }
 
         // Which cell stdout/stderr lines belong to (set before each eval).
         let current: Arc<Mutex<Uuid>> = Arc::new(Mutex::new(Uuid::nil()));

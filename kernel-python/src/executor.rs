@@ -11,15 +11,13 @@ use std::ffi::CString;
 use std::sync::Arc;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
-/// Python helpers, defined once per cell run:
-///   * `_patina_run`  — exec a leaf, stashing the last top-level expression's
-///                      value (IPython-style) in `g['__patina_val']`.
-///   * `_patina_collect` — after all leaves, return the rich outputs to display
-///                      as a list of `(kind, text)` (kind = "html" | "text"):
-///                      any open matplotlib figures (as inline PNGs) followed by
-///                      the final value rendered via its display protocol
-///                      (`_repr_html_` / `_repr_svg_` / `_repr_png_`, else repr).
-///                      pandas DataFrames render as HTML tables for free.
+/// Python helpers defined once per cell run. `_patina_run` execs a leaf,
+/// stashing the last top-level expression's value (IPython-style) in
+/// `g['__patina_val']`. `_patina_collect` then returns the rich outputs to
+/// display as `(kind, text)` pairs: any open matplotlib figures as inline PNGs,
+/// followed by the final value via its display protocol (`_repr_html_` /
+/// `_repr_svg_` / `_repr_png_`, else `repr`). pandas DataFrames render as HTML
+/// for free.
 const DRIVER: &str = r#"
 def _patina_run(src, g):
     import ast
@@ -81,11 +79,94 @@ def _patina_collect(g):
     return outs
 "#;
 
+/// Batteries-included: make common data libraries importable. Installs into a
+/// Patina-managed venv (`~/.patina/pyenv`) rather than the embedded interpreter
+/// — its Python is usually system/homebrew, which is externally managed
+/// (PEP 668) and must not be modified. The venv (same Python version, so
+/// ABI-compatible) is added to `sys.path`. Binary wheels only, so it fails fast
+/// when no wheel exists. On by default; set PATINA_BATTERIES=0 to skip.
+const ENSURE_PKGS: &str = r#"
+def _patina_python():
+    # Find a real python binary. In the embedded interpreter sys.executable is
+    # the kernel binary, so we can't use it for `-m venv`.
+    import os, shutil, sys
+    ver = "%d.%d" % sys.version_info[:2]
+    bp = getattr(sys, "base_prefix", "") or sys.prefix
+    cands = [getattr(sys, "_base_executable", "") or "",
+             os.path.join(bp, "bin", "python" + ver),
+             os.path.join(bp, "bin", "python3"),
+             shutil.which("python" + ver) or "",
+             shutil.which("python3") or ""]
+    for c in cands:
+        if c and os.path.exists(c) and "patina" not in os.path.basename(c):
+            return c
+    return ""
+
+def _patina_ensure(pkgs):
+    import importlib.util, os, subprocess, sys
+    home = os.path.expanduser("~/.patina/pyenv")
+    ver = "%d.%d" % sys.version_info[:2]
+    site = os.path.join(home, "lib", "python" + ver, "site-packages")
+    venv_py = os.path.join(home, "bin", "python")
+    if os.path.isdir(site) and site not in sys.path:
+        sys.path.insert(0, site)
+    missing = [p for p in pkgs if importlib.util.find_spec(p) is None]
+    if not missing:
+        return "present: " + ", ".join(pkgs)
+    # Don't leak the embedded interpreter's env into the child python.
+    env = {k: v for k, v in os.environ.items()
+           if k not in ("PYTHONHOME", "PYTHONPATH", "PYTHONEXECUTABLE")}
+    if not os.path.exists(venv_py):
+        py = _patina_python()
+        if not py:
+            return "no python found; skipped " + ", ".join(missing)
+        subprocess.run([py, "-m", "venv", home], env=env, check=False)
+    if not os.path.exists(venv_py):
+        return "could not create venv; skipped " + ", ".join(missing)
+    print("patina: installing " + ", ".join(missing) + " into ~/.patina/pyenv …",
+          file=sys.stderr, flush=True)
+    r = subprocess.run([venv_py, "-m", "pip", "install",
+                        "--only-binary=:all:", "--disable-pip-version-check", *missing], env=env)
+    importlib.invalidate_caches()
+    if os.path.isdir(site) and site not in sys.path:
+        sys.path.insert(0, site)
+    return ("installed: " if r.returncode == 0 else "install failed (no wheels?): ") + ", ".join(missing)
+"#;
+
+fn batteries_enabled() -> bool {
+    !matches!(
+        std::env::var("PATINA_BATTERIES").as_deref(),
+        Ok("0") | Ok("off") | Ok("false")
+    )
+}
+
+fn ensure_packages() {
+    Python::with_gil(|py| {
+        let helpers = PyDict::new(py);
+        if py
+            .run(CString::new(ENSURE_PKGS).unwrap().as_c_str(), Some(&helpers), None)
+            .is_err()
+        {
+            return;
+        }
+        if let Ok(Some(f)) = helpers.get_item("_patina_ensure") {
+            let pkgs = ("numpy", "pandas", "matplotlib");
+            match f.call1((pkgs,)).and_then(|r| r.extract::<String>()) {
+                Ok(status) => eprintln!("patina-kernel-python: {status}"),
+                Err(e) => eprintln!("patina-kernel-python: package check failed: {e}"),
+            }
+        }
+    });
+}
+
 pub fn spawn_executor(
     mut rx: UnboundedReceiver<ToExecutorMessage>,
     tx: UnboundedSender<FromExecutorMessage>,
 ) {
     std::thread::spawn(move || {
+        if batteries_enabled() {
+            ensure_packages();
+        }
         // Persistent namespace shared across all cells.
         let globals: Py<PyDict> = Python::with_gil(|py| PyDict::new(py).unbind());
 

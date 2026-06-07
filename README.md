@@ -47,8 +47,8 @@ A cell renders its last expression — as text, or as HTML / images:
 
 - **Python** (Jupyter-style): pandas `DataFrame`s become HTML tables, matplotlib
   figures are captured as inline PNGs, and any object with
-  `_repr_html_` / `_repr_svg_` / `_repr_png_` is rendered. Install the libraries into
-  the kernel's Python (`pip install pandas matplotlib`).
+  `_repr_html_` / `_repr_svg_` / `_repr_png_` is rendered. `numpy` / `pandas` /
+  `matplotlib` come preloaded (see [Batteries included](#batteries-included)).
 - **Rust**: the equivalents are **`polars`** (dataframes) and **`plotters`** (charts).
   plotters' `evcxr_figure(...)` renders inline when returned as the last expression,
   and two built-in helpers display any markup:
@@ -115,6 +115,22 @@ let answer: i32 = 40 + 2;
 println!("hello from the rust kernel");
 answer            // -> 42
 ```
+
+## Batteries included
+
+Common data libraries are preloaded so notebooks work out of the box — on by
+default; set `PATINA_BATTERIES=0` for a leaner, faster start.
+
+- **Rust** — `polars`, `plotters` (with `evcxr` support), and `ndarray` are
+  pre-`:dep`'d at kernel startup, so cells can just `use polars::prelude::*;`
+  with no `:dep` line.
+- **Python** — `numpy`, `pandas`, and `matplotlib` are installed (binary wheels)
+  into a Patina-managed virtualenv at `~/.patina/pyenv` and added to the kernel's
+  path. This avoids touching the system/Homebrew Python (which is externally
+  managed, PEP 668).
+
+The first launch on a machine pays the cost (compiling the Rust crates / downloading
+the Python wheels); after that it's cached.
 
 ## Compile speed (Rust cells)
 
