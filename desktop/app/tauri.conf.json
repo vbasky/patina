@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "identifier": "rs.patina.app",
   "build": {
-    "frontendDist": "../../browser/ui/dist"
+    "frontendDist": "../../browser/ui/dist",
+    "beforeBuildCommand": "bash prebuild.sh"
   },
   "app": {
     "withGlobalTauri": false,
@@ -22,6 +23,11 @@
       "binaries/patina-kernel",
       "binaries/patina-kernel-python",
       "binaries/patina-kernel-js"
+    ],
+    "resources": [
+      "resources/toolchain/**/*",
+      "resources/cargo/**/*",
+      "resources/python/**/*"
     ]
   },
   "plugins": {}
