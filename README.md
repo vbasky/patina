@@ -1,59 +1,114 @@
-<p align="center">
-    <img width="160" src="browser/ui/public/patina.svg">
-</p>
-
 # Patina
 
-**Patina is a Rust-only interactive notebook.** It runs **Rust** cells directly —
-no Python, no Jupyter — by embedding the [`evcxr`](https://github.com/evcxr/evcxr)
-evaluation engine as a native kernel. The server, the kernel, and the protocol
-are all Rust; the only non-Rust piece is the browser UI.
+![patina — a Rust-native interactive notebook for Rust, Python and JavaScript](https://raw.githubusercontent.com/vbasky/patina/main/docs/banner.svg)
 
-Code and outputs are separated, results history is preserved, and memory state is
-inspectable — but the language you actually compute in is Rust.
+**Name:** *patina* is the sheen that forms on metal as it weathers and oxidizes — i.e.
+*rust*. A nod to **Rust**, the language the whole stack (server, kernels, even the
+JavaScript engine) is built in.
 
-> Patina is a fork of **[Twinsong](https://github.com/spirali/twinsong)** by Ada Böhm.
-> The original design, server, and UI are upstream's; Patina swaps the Python kernel
-> for a native Rust one. See `LICENSE-MIT` / `LICENSE-APACHE`.
+[![CI](https://img.shields.io/github/actions/workflow/status/vbasky/patina/build.yml?branch=main&logo=github&label=CI)](https://github.com/vbasky/patina/actions)
+[![License](https://img.shields.io/github/license/vbasky/patina)](LICENSE-MIT)
+[![kernels](https://img.shields.io/badge/kernels-Rust%20·%20Python%20·%20JavaScript-c47b3f?logo=rust)](#languages)
+[![UI](https://img.shields.io/badge/UI-React-61dafb?logo=react)](browser/ui)
 
-## Why
+**Patina is a Rust-native interactive notebook.** Cells run in **Rust**, **Python**,
+or **JavaScript** — and the stack around them (web server, kernels, wire protocol,
+and even the JavaScript engine) is written entirely in Rust. No Jupyter, no separate
+kernel-protocol plumbing.
 
-Jupyter is clumsy for Rust: it leans on a Python host, a separate kernel process
-protocol, and a document model where re-running a cell clobbers history. Patina
-keeps that cleaner model and swaps the language: every cell is Rust,
-compiled and run incrementally by `evcxr`, with `:dep` support for pulling crates.
+Code and outputs stay separate, run history is preserved instead of clobbered, and
+live variables are inspectable.
+
+> The original design, server, and UI are upstream's; Patina replaces the single
+> Python kernel with native Rust / Python / JavaScript kernels. See `LICENSE-MIT` /
+> `LICENSE-APACHE`.
+
+## Languages
+
+Each notebook runs one language. Pick it when you create the notebook (dropdown in the
+file sidebar) or switch later from the editor toolbar — a switch takes effect for the
+next kernel, so restart the kernel to change a running one. The server launches the
+matching kernel binary.
+
+| Language     | Kernel                  | Engine                        | State across cells     |
+| ------------ | ----------------------- | ----------------------------- | ---------------------- |
+| Rust         | `patina-kernel`         | `evcxr` (compiled per cell)   | full                   |
+| Python       | `patina-kernel-python`  | embedded CPython (`pyo3`)     | full                   |
+| JavaScript   | `patina-kernel-js`      | `boa` (pure Rust, no V8)      | `var` / globals only   |
+
+- **Rust** — pull crates inside a cell with `:dep foo = "1"`.
+- **Python** — embeds CPython via pyo3; `import` resolves against that Python's packages.
+- **JavaScript** — top-level `let`/`const` don't persist across cells (a boa/REPL limit);
+  `var` and global assignments do.
+
+## Rich output
+
+A cell renders its last expression — as text, or as HTML / images:
+
+- **Python** (Jupyter-style): pandas `DataFrame`s become HTML tables, matplotlib
+  figures are captured as inline PNGs, and any object with
+  `_repr_html_` / `_repr_svg_` / `_repr_png_` is rendered. Install the libraries into
+  the kernel's Python (`pip install pandas matplotlib`).
+- **Rust**: the equivalents are **`polars`** (dataframes) and **`plotters`** (charts).
+  plotters' `evcxr_figure(...)` renders inline when returned as the last expression,
+  and two built-in helpers display any markup:
+
+  ```rust
+  patina_html(&html);   // any HTML fragment — e.g. a polars table
+  patina_svg(&svg);     // inline SVG — e.g. a plotters SVGBackend string
+  ```
+
+  evcxr persists `let` bindings across cells, so give them a concrete type and avoid a
+  trailing `?` (which makes type inference fail): `let df: DataFrame = df!(...).unwrap();`
+
+## Workspace & files
+
+The file browser is rooted at a **`./notebooks`** workspace (override with
+`PATINA_WORKSPACE`) — only that folder is shown, with folder navigation and a
+breadcrumb. From the sidebar you can:
+
+- **Create** `.tsnb` notebooks in the current folder, in any language.
+- **Upload** `.tsnb`, `.md`, or `.ipynb` files. Markdown and Jupyter notebooks are
+  converted to `.tsnb` (prose → Markdown cells, code → code cells); an `.ipynb`'s
+  language is detected from its kernel metadata.
+- **Delete** files.
+
+The light/dark theme follows your OS by default and can be changed from the top bar.
 
 ## How it works
 
-```
- browser UI  --ws-->  patina (server, Rust)  --tcp/bincode-->  patina-kernel (Rust)
-                                                                  +- evcxr::EvalContext
+```text
+ browser UI  ──ws──▶  patina (server, Rust)  ──tcp/bincode──▶  kernel (Rust)
+ React, embedded                                               evcxr · pyo3 · boa
+ in the binary
 ```
 
-- **`patina`** — the web server.
-- **`patina-kernel`** — a new crate: a kernel that speaks the same `comm` wire
-  protocol but evaluates Rust via an embedded `evcxr::EvalContext`. stdout streams
-  live, the final expression renders as text or HTML (`EVCXR_BEGIN_CONTENT`), and
-  `evcxr`'s live variables feed the globals inspector.
-- **`common`** — the shared protocol (`comm`), unchanged.
+- **`patina`** — Axum web server: serves the embedded UI, manages the notebook
+  workspace, and spawns the per-language kernel as a child process.
+- **`patina-kernel` / `-python` / `-js`** — one binary per language, all speaking the
+  shared `comm` protocol over TCP. They share a networking run-loop and differ only in
+  the executor (`evcxr::CommandContext`, embedded CPython, or `boa`). stdout streams
+  live; the last expression renders as text or HTML; live variables feed the inspector.
+- **`common`** (`comm`) — the wire protocol (length-delimited bincode), the message
+  types, and the shared kernel runtime.
 
 ## Getting started (from source)
 
-You need a Rust toolchain (with `cargo`) and Node.js for the UI.
+You need a Rust toolchain, Node.js (for the UI), and a Python 3 install (the Python
+kernel embeds CPython through pyo3).
 
 ```bash
-# 1. Build the frontend (embedded into the server binary)
+# 1. Build the UI (it gets embedded into the server binary)
 cd browser/ui && npm install && ./build.sh && cd ../..
 
-# 2. Build the native stack (server + Rust kernel)
-cargo build            # builds `patina` and `patina-kernel` (default-members)
+# 2. Build the server and all three kernels
+cargo build
 
 # 3. Run it
-./target/debug/patina          # opens at http://127.0.0.1:4050
+./target/debug/patina          # http://127.0.0.1:4050   (use --port to change)
 ```
 
-The server launches `patina-kernel` automatically (it looks next to the server
-binary, or at `$PATINA_KERNEL`). Create a notebook, type Rust in a cell, and run it:
+Then create a notebook and run a cell with `Shift`+`Enter`:
 
 ```rust
 let answer: i32 = 40 + 2;
@@ -61,62 +116,20 @@ println!("hello from the rust kernel");
 answer            // -> 42
 ```
 
-Add crates inside a cell with evcxr's directive:
+## Compile speed (Rust cells)
 
-```rust
-:dep ndarray = "0.16"
-```
-
-## Languages
-
-Each notebook picks a language (kernel) — choose it when creating the notebook
-(dropdown in the file sidebar) or switch later from the dropdown in the editor
-toolbar (applies to the next kernel; restart to switch a running one). Uploaded
-`.ipynb` files infer their language from the kernel metadata.
-
-- **Rust** — cells run through `evcxr`; add crates with `:dep`.
-- **Python** — embedded CPython (pyo3); state persists across cells.
-- **JavaScript** — the pure-Rust [`boa`](https://github.com/boa-dev/boa) engine
-  (no V8). `var`/global state persists; top-level `let`/`const` may not carry
-  across cells.
-
-## Rich output
-
-A cell renders its last expression. Beyond text, both kernels can emit HTML:
-
-**Python** — works like Jupyter's inline backend:
-
-- **pandas** `DataFrame`s render as HTML tables automatically (`_repr_html_`).
-- **matplotlib** figures are captured as inline PNGs (just `plt.plot(...)`).
-- Any object implementing `_repr_html_` / `_repr_svg_` / `_repr_png_` is shown.
-
-**Rust** — the equivalents are **`polars`** (dataframes) and **`plotters`**
-(charts). Two helpers are available in every cell to emit rich content:
-
-```rust
-patina_html(&html);   // any HTML fragment — e.g. a polars table rendered to HTML
-patina_svg(&svg);     // inline SVG — e.g. a plotters SVGBackend string
-```
-
-For example, render a `plotters` chart to an SVG `String` and pass it to
-`patina_svg(...)`; print a `polars` `DataFrame` with `println!("{df}")` for a text
-table, or build an HTML table and call `patina_html(...)`.
-
-## Example notebooks
-
-Patina ships with a set of ready-to-run notebooks in
-[`notebooks/`](./notebooks/) — a from-scratch tour of modern AI (agents,
-RAG, attention, a net that learns XOR, …), all offline and Rust-only. They show up
-automatically in the file browser: the workspace defaults to `./notebooks` (override
-with `PATINA_WORKSPACE`), so just launch Patina and open one.
+Every `:dep` compiles that crate from source the first time, which is slow for large
+crates like polars or plotters. The Rust kernel auto-enables **sccache** when it's on
+your `PATH` (`brew install sccache` or `cargo install sccache`), caching compiled
+artifacts across cells, kernel restarts, and notebooks — so you pay the build cost
+once per machine. Trimming a crate's feature set helps too.
 
 ## Status
 
-Experimental, like its upstream. The kernels support cell evaluation, streamed
-stdout/stderr, text/HTML output, and globals inspection. State save/load and
-kernel forking are **not yet** supported (evcxr's compiled context can't be
-cheaply snapshotted/forked, and the Python/JS kernels don't persist state to
-disk either).
+Experimental. The kernels support cell evaluation, streamed stdout/stderr, text /
+HTML / image output, and globals inspection. State save/load and kernel forking are
+**not yet** supported (evcxr's compiled context can't be cheaply snapshotted/forked,
+and the Python/JS kernels don't persist state to disk).
 
 ## License
 

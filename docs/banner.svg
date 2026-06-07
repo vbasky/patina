@@ -1,0 +1,99 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Patina — a notebook for Rust, Python and JavaScript, built in pure Rust">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f3f4fb"/>
+      <stop offset="1" stop-color="#fdfdff"/>
+    </linearGradient>
+    <!-- product logo gradients (copper aging into verdigris) -->
+    <linearGradient id="pat" x1="40" y1="20" x2="200" y2="220" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#c47b3f"/>
+      <stop offset="0.45" stop-color="#9c6a4e"/>
+      <stop offset="0.7" stop-color="#3f9f8e"/>
+      <stop offset="1" stop-color="#2b7d68"/>
+    </linearGradient>
+    <linearGradient id="patEdge" x1="120" y1="20" x2="120" y2="220" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.35"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.18"/>
+    </linearGradient>
+    <!-- graph-paper dot grid -->
+    <pattern id="dots" width="34" height="34" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.6" fill="#d6dbea"/>
+    </pattern>
+    <!-- soft fade so the dots recede behind the centered content -->
+    <radialGradient id="vignette" cx="50%" cy="46%" r="62%">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.92"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <path id="hex" d="M120 16 L210 68 L210 172 L120 224 L30 172 L30 68 Z"/>
+    <clipPath id="card"><rect x="1" y="1" width="1198" height="628" rx="18"/></clipPath>
+  </defs>
+
+  <rect x="1" y="1" width="1198" height="628" rx="18" fill="url(#bg)" stroke="#e6e8f1" stroke-width="2"/>
+
+  <!-- background motif: faint notebook cells (a code cell + an output cell with
+       a chart) bleeding off opposite corners, over light graph-paper dots -->
+  <g clip-path="url(#card)">
+    <rect width="1200" height="630" fill="url(#dots)"/>
+
+    <!-- code cell, top-left -->
+    <g opacity="0.6">
+      <rect x="-60" y="-34" width="380" height="216" rx="14" fill="#ffffff" stroke="#e1e5f1" stroke-width="2"/>
+      <rect x="-60" y="-34" width="7" height="216" rx="3" fill="#f97316"/>
+      <circle cx="14" cy="2" r="9" fill="none" stroke="#cfd5e6" stroke-width="3"/>
+      <path d="M10 -3 L19 2 L10 7 Z" fill="#f97316"/>
+      <rect x="44" y="40" width="170" height="11" rx="5.5" fill="#cdd3e4"/>
+      <rect x="44" y="68" width="232" height="11" rx="5.5" fill="#cdd3e4"/>
+      <rect x="44" y="96" width="120" height="11" rx="5.5" fill="#f6c39b"/>
+      <rect x="44" y="124" width="198" height="11" rx="5.5" fill="#cdd3e4"/>
+      <rect x="44" y="152" width="96" height="11" rx="5.5" fill="#cdd3e4"/>
+    </g>
+
+    <!-- output cell with a small bar chart, top-right (mirrors the code cell) -->
+    <g opacity="0.6">
+      <rect x="900" y="-34" width="380" height="216" rx="14" fill="#ffffff" stroke="#e1e5f1" stroke-width="2"/>
+      <rect x="900" y="-34" width="7" height="216" rx="3" fill="#2b7d68"/>
+      <rect x="944" y="8" width="150" height="10" rx="5" fill="#cdd3e4"/>
+      <line x1="944" y1="160" x2="1240" y2="160" stroke="#dfe3ef" stroke-width="2"/>
+      <rect x="956"  y="104" width="34" height="56"  rx="3" fill="#9fb7c9"/>
+      <rect x="1006" y="78"  width="34" height="82"  rx="3" fill="#7fa6bf"/>
+      <rect x="1056" y="54"  width="34" height="106" rx="3" fill="#3f9f8e"/>
+      <rect x="1106" y="72"  width="34" height="88"  rx="3" fill="#f97316"/>
+      <rect x="1156" y="94"  width="34" height="66"  rx="3" fill="#c47b3f"/>
+    </g>
+
+    <rect width="1200" height="630" fill="url(#vignette)"/>
+  </g>
+
+  <!-- product logo (browser/ui/public/patina.svg), centered above the wordmark -->
+  <g transform="translate(545, 64) scale(0.46)">
+    <path d="M120 16 L210 68 L210 172 L120 224 L30 172 L30 68 Z" fill="url(#pat)"/>
+    <path d="M120 16 L210 68 L210 172 L120 224 L30 172 L30 68 Z" fill="url(#patEdge)"/>
+    <path d="M120 16 L210 68 L210 172 L120 224 L30 172 L30 68 Z" fill="none" stroke="#1f5e4e" stroke-opacity="0.5" stroke-width="3"/>
+    <g stroke="#f5f1ea" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <polyline points="92,92 128,120 92,148"/>
+      <line x1="138" y1="152" x2="172" y2="152"/>
+    </g>
+    <g fill="#bfe6da" fill-opacity="0.5">
+      <circle cx="64" cy="150" r="3.5"/>
+      <circle cx="78" cy="176" r="2.5"/>
+      <circle cx="158" cy="78" r="2.5"/>
+    </g>
+  </g>
+
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" text-anchor="middle">
+    <!-- wordmark + orange underline -->
+    <text x="600" y="350" font-size="116" font-weight="700" fill="#20264a" letter-spacing="-2">patina</text>
+    <rect x="455" y="372" width="290" height="8" rx="4" fill="#f97316"/>
+
+    <!-- tagline -->
+    <text x="600" y="448" font-size="33" font-weight="500" fill="#565d6d">A notebook for Rust, Python &amp; JavaScript — built in pure Rust</text>
+
+    <!-- keyword row -->
+    <text x="600" y="512" font-size="22" font-weight="600" fill="#98a0b0" letter-spacing="3">RUST · PYTHON · JAVASCRIPT · :DEP · RICH OUTPUT</text>
+
+    <!-- footer -->
+    <text x="600" y="580" font-size="20" font-weight="400" fill="#aab0bd" letter-spacing="1">github.com/vbasky/patina · evcxr · pyo3 · boa · MIT / Apache-2.0</text>
+  </g>
+</svg>
