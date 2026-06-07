@@ -62,8 +62,27 @@ pub async fn server_cli(args: Option<Vec<String>>) {
             // --key wins; otherwise reuse a persisted key so sessions survive restarts.
             let key = args.key.clone().or_else(persistent_key);
             let state = Arc::new(Mutex::new(AppState::new(args.port, key)));
-            init_kernel_manager(&state).await.unwrap();
-            http_server_main(state, args.port).await.unwrap();
+            if let Err(e) = init_kernel_manager(&state).await {
+                eprintln!("patina: failed to start kernel manager: {e}");
+                std::process::exit(1);
+            }
+            if let Err(e) = http_server_main(state, args.port).await {
+                // Most commonly the port is already taken (another Patina, or a
+                // leftover process). Give a clear message instead of a panic.
+                let addr_in_use = e
+                    .downcast_ref::<std::io::Error>()
+                    .is_some_and(|io| io.kind() == std::io::ErrorKind::AddrInUse);
+                if addr_in_use {
+                    eprintln!(
+                        "patina: port {} is already in use — is Patina already running? \
+                         Pass --port <PORT> to use a different one.",
+                        args.port
+                    );
+                } else {
+                    eprintln!("patina: server error: {e}");
+                }
+                std::process::exit(1);
+            }
         })
         .await;
 }
