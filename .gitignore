@@ -1,0 +1,8 @@
+venv
+__pycache__
+target
+.idea
+*~
+
+# Notebook workspace — user/runtime data, created by the server on first run.
+notebooks/

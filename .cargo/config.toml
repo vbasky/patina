@@ -1,0 +1,5 @@
+# The Python kernel (kernel-python) embeds CPython via pyo3. When the local
+# Python is newer than pyo3's pinned maximum (e.g. 3.14), abi3 forward
+# compatibility lets it build against the stable ABI anyway.
+[env]
+PYO3_USE_ABI3_FORWARD_COMPATIBILITY = "1"

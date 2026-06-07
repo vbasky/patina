@@ -1,0 +1,24 @@
+[workspace]
+resolver = "2"
+members = ["patina", "common", "kernel", "kernel-python", "kernel-js"]
+# Server + language kernels.
+default-members = ["patina", "common", "kernel", "kernel-python", "kernel-js"]
+
+[workspace.dependencies]
+tokio = "1"
+serde = { version = "1.0", features = ["rc"] }
+serde_json = "1.0"
+anyhow = "1.0"
+tokio-util = "0.7"
+futures-util = "0.3"
+uuid = { version = "1.13", features = ["v4", "serde"] }
+tracing-subscriber = "0.3"
+tracing = "0.1"
+nutype = "0.6"
+
+
+[profile.release]
+panic = "abort"
+debug = "line-tables-only"
+codegen-units = 1
+lto = true
