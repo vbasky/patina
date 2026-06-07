@@ -140,6 +140,29 @@ your `PATH` (`brew install sccache` or `cargo install sccache`), caching compile
 artifacts across cells, kernel restarts, and notebooks — so you pay the build cost
 once per machine. Trimming a crate's feature set helps too.
 
+## Bundled toolchain (self-contained desktop app)
+
+The Rust kernel needs a Rust toolchain to compile cells. To ship a desktop app
+that doesn't depend on the host having Rust, **bundle one**: build a relocatable
+toolchain (+ vendored batteries crates and a prewarmed cache) and point the kernel
+at it. No evcxr fork required — the kernel just configures the environment its
+cargo sees.
+
+```bash
+desktop/build-rust-bundle.sh            # online: host needs no Rust; :dep still uses the network
+desktop/build-rust-bundle.sh --offline  # offline: only the vendored crates, no network (Playground-style)
+
+PATINA_TOOLCHAIN=desktop/bundle/toolchain ./target/debug/patina
+```
+
+The kernel uses `$PATINA_TOOLCHAIN` (else a `toolchain/` dir beside the kernel
+binary) and auto-picks-up a sibling `cargo/` (vendored registry + config) and
+`target/` (prewarmed cache); override with `$PATINA_CARGO_HOME` / `$PATINA_TARGET_DIR`.
+Caveat: on macOS, linking native crates still needs the system linker/SDK unless
+you also bundle a sysroot — the only fully-host-free Rust path is a wasm executor
+(a much larger change). Python ships self-contained via a bundled standalone
+interpreter; the JavaScript (boa) kernel already needs nothing from the host.
+
 ## Status
 
 Experimental. The kernels support cell evaluation, streamed stdout/stderr, text /

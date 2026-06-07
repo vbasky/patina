@@ -9,6 +9,7 @@ mod executor;
 
 use comm::kernel::run_kernel;
 use executor::spawn_executor;
+use std::path::{Path, PathBuf};
 
 fn main() {
     // evcxr re-invokes THIS binary as its compile/run subprocess. When it does,
@@ -17,11 +18,19 @@ fn main() {
     // that case. In a normal kernel launch it returns immediately.
     evcxr::runtime_hook();
 
+    // For a self-contained desktop app: if a bundled Rust toolchain ships with
+    // the app, point evcxr's cargo at it so the host needs no Rust install.
+    // When absent (the default), the host toolchain is used as before.
+    let bundled = configure_bundled_toolchain();
+
     // Speed up the per-cell rustc compiles: if `sccache` is installed, use it as
     // the rustc wrapper so built crates (incl. `:dep`s) are cached across cells
     // and kernel restarts. Set before any threads spawn (env::set_var safety).
     enable_sccache_if_available();
-    tune_build_speed();
+    // The bundle's own cargo config drives RUSTFLAGS/linker, so don't override it.
+    if !bundled {
+        tune_build_speed();
+    }
 
     // evcxr runs rust-analyzer in-process, which is extremely chatty at INFO.
     // Default to WARN; honor RUST_LOG if the user wants more.
@@ -38,6 +47,74 @@ fn main() {
         eprintln!("patina-kernel error: {e:?}");
         std::process::exit(1);
     }
+}
+
+/// Path to a toolchain binary (`<root>/bin/<name>[.exe]`).
+fn tool_bin(root: &Path, name: &str) -> PathBuf {
+    let exe = if cfg!(windows) {
+        format!("{name}.exe")
+    } else {
+        name.to_string()
+    };
+    root.join("bin").join(exe)
+}
+
+/// If a bundled, relocatable Rust toolchain is present, route evcxr's cargo at
+/// it (so the host needs no Rust install). The toolchain root is taken from
+/// `$PATINA_TOOLCHAIN`, else a `toolchain/` directory beside the kernel binary;
+/// it's used only if it actually contains `bin/cargo`. A sibling `cargo/`
+/// (vendored registry + `config.toml` with linker/offline settings) and
+/// prewarmed `target/` cache are picked up automatically, overridable via
+/// `$PATINA_CARGO_HOME` / `$PATINA_TARGET_DIR`. Returns true if a bundle is used.
+fn configure_bundled_toolchain() -> bool {
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(Path::to_path_buf));
+    let root = std::env::var_os("PATINA_TOOLCHAIN")
+        .map(PathBuf::from)
+        .or_else(|| exe_dir.as_ref().map(|d| d.join("toolchain")))
+        .filter(|p| tool_bin(p, "cargo").exists());
+    let Some(root) = root else {
+        return false;
+    };
+
+    // Prepend the bundled bin dir to PATH (so cargo/rustc/rust-lld resolve here).
+    if let Some(path) = std::env::var_os("PATH") {
+        let mut parts = vec![root.join("bin")];
+        parts.extend(std::env::split_paths(&path));
+        if let Ok(joined) = std::env::join_paths(parts) {
+            // SAFETY: called early in main, before any threads are spawned.
+            unsafe { std::env::set_var("PATH", joined) };
+        }
+    }
+    // SAFETY: called early in main, before any threads are spawned.
+    unsafe {
+        std::env::set_var("CARGO", tool_bin(&root, "cargo"));
+        std::env::set_var("RUSTC", tool_bin(&root, "rustc"));
+    }
+
+    // Vendored registry + cargo config (linker, `net.offline`, source-replace).
+    let cargo_home = std::env::var_os("PATINA_CARGO_HOME")
+        .map(PathBuf::from)
+        .or_else(|| root.parent().map(|p| p.join("cargo")))
+        .filter(|p| p.is_dir());
+    if let Some(ch) = cargo_home {
+        unsafe { std::env::set_var("CARGO_HOME", ch) };
+    }
+    // Prewarmed build cache (so the batteries crates don't recompile on first run).
+    let target = std::env::var_os("PATINA_TARGET_DIR")
+        .map(PathBuf::from)
+        .or_else(|| root.parent().map(|p| p.join("target")))
+        .filter(|p| p.is_dir());
+    if let Some(t) = target {
+        unsafe { std::env::set_var("CARGO_TARGET_DIR", t) };
+    }
+
+    eprintln!(
+        "patina-kernel: using bundled toolchain at {}",
+        root.display()
+    );
+    true
 }
 
 /// If `sccache` is on PATH and no rustc wrapper is configured, route compiles
