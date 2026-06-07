@@ -15,6 +15,7 @@ import { useDispatch, useGlobalState } from "./StateProvider";
 import { loadNotebook } from "../core/actions";
 import { DirEntry } from "../core/state";
 import { Language } from "../core/notebook";
+import { LanguageIcon } from "./LanguageIcon";
 
 const LANGUAGES: Language[] = ["Rust", "Python", "JavaScript"];
 
@@ -147,8 +148,9 @@ const NotebookList = () => {
           Files
         </span>
         {/* Language for newly created notebooks. */}
-        <label className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-gray-400">
+        <label className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-gray-400">
           New
+          <LanguageIcon language={newLang} size={15} />
           <select
             value={newLang}
             onChange={(e) => setNewLang(e.target.value as Language)}

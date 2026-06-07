@@ -37,6 +37,7 @@ import {
 } from "../core/actions";
 
 import Editor from "react-simple-code-editor";
+import { LanguageIcon } from "./LanguageIcon";
 import { NodeToolbar } from "./EditorToolbar";
 import { OutputValueView } from "./OutputCell";
 import { TbCircleDashed } from "react-icons/tb";
@@ -600,6 +601,9 @@ const EditorPanel: React.FC<{ notebook: Notebook; run: Run | null }> = ({
             <LuSave className="h-4 w-4" />
           )}
         </ToolButton>
+        <span className="ml-auto flex items-center">
+          <LanguageIcon language={notebook.language} size={15} />
+        </span>
         <select
           value={notebook.language}
           title="Notebook language — applies to the next kernel (restart to switch a running one)"
@@ -616,7 +620,7 @@ const EditorPanel: React.FC<{ notebook: Notebook; run: Run | null }> = ({
               language,
             });
           }}
-          className="ml-auto rounded-md border border-gray-200 bg-white px-2 py-0.5 text-[11px] font-medium text-gray-600 dark:border-[#3a3a3a] dark:bg-[#2d2d2d] dark:text-gray-300"
+          className="rounded-md border border-gray-200 bg-white px-2 py-0.5 text-[11px] font-medium text-gray-600 dark:border-[#3a3a3a] dark:bg-[#2d2d2d] dark:text-gray-300"
         >
           {LANGUAGES.map((l) => (
             <option key={l} value={l}>
