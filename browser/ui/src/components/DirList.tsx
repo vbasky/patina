@@ -142,23 +142,26 @@ const NotebookList = () => {
         </button>
       </div>
 
-      <div className="flex items-center justify-between px-3 pb-1">
+      <div className="flex items-center justify-between gap-2 px-3 pb-2">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
           Files
         </span>
         {/* Language for newly created notebooks. */}
-        <select
-          value={newLang}
-          onChange={(e) => setNewLang(e.target.value as Language)}
-          title="Language for new notebooks"
-          className="rounded border border-gray-200 bg-white px-1 py-0.5 text-[11px] text-gray-600 dark:border-[#3a3a3a] dark:bg-[#2d2d2d] dark:text-gray-300"
-        >
-          {LANGUAGES.map((l) => (
-            <option key={l} value={l}>
-              {l}
-            </option>
-          ))}
-        </select>
+        <label className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-gray-400">
+          New
+          <select
+            value={newLang}
+            onChange={(e) => setNewLang(e.target.value as Language)}
+            title="Language for new notebooks"
+            className="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-normal normal-case text-gray-700 hover:bg-gray-50 dark:border-[#3a3a3a] dark:bg-[#2d2d2d] dark:text-gray-200 dark:hover:bg-[#3a3a3a]"
+          >
+            {LANGUAGES.map((l) => (
+              <option key={l} value={l}>
+                {l}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {/* Breadcrumb: clickable path segments back to the root. */}
