@@ -1,0 +1,120 @@
+name: build
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - '*'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build_ui:
+    name: Build UI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: ./browser/ui
+
+      - name: Build UI
+        run: bash build.sh
+        working-directory: ./browser/ui
+
+      - name: Upload UI
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser_ui
+          path: ./browser/ui/dist
+
+  checks:
+    name: Rust checks
+    runs-on: ubuntu-latest
+    needs: [build_ui]
+    steps:
+      - uses: actions/checkout@v4
+      # The server embeds the UI via include_bytes!, so the bundle must exist
+      # before anything that compiles `patina`.
+      - uses: actions/download-artifact@v4
+        with:
+          name: browser_ui
+          path: ./browser/ui/dist
+      # The Python kernel embeds CPython via pyo3, so a Python must be present.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Clippy
+        run: cargo clippy --workspace -- -D warnings
+
+  build:
+    name: Build (${{ matrix.platform.name }})
+    runs-on: ${{ matrix.platform.runner }}
+    needs: [build_ui]
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - { runner: ubuntu-22.04, name: linux-x86_64 }
+          - { runner: windows-latest, name: windows-x64 }
+          - { runner: macos-13, name: macos-x86_64 }
+          - { runner: macos-14, name: macos-aarch64 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: browser_ui
+          path: ./browser/ui/dist
+      # The Python kernel embeds CPython via pyo3, so a Python must be present.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build
+        run: cargo build --release
+      - name: Test
+        run: cargo test --release
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: patina-${{ matrix.platform.name }}
+          if-no-files-found: ignore
+          path: |
+            target/release/patina
+            target/release/patina-kernel
+            target/release/patina-kernel-python
+            target/release/patina-kernel-js
+            target/release/patina.exe
+            target/release/patina-kernel.exe
+            target/release/patina-kernel-python.exe
+            target/release/patina-kernel-js.exe
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: [checks, build]
+    if: ${{ startsWith(github.ref, 'refs/tags/') }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/patina-*/**
