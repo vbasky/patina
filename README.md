@@ -160,8 +160,22 @@ binary) and auto-picks-up a sibling `cargo/` (vendored registry + config) and
 `target/` (prewarmed cache); override with `$PATINA_CARGO_HOME` / `$PATINA_TARGET_DIR`.
 Caveat: on macOS, linking native crates still needs the system linker/SDK unless
 you also bundle a sysroot — the only fully-host-free Rust path is a wasm executor
-(a much larger change). Python ships self-contained via a bundled standalone
-interpreter; the JavaScript (boa) kernel already needs nothing from the host.
+(a much larger change).
+
+**Python** ships self-contained the same way — fetch a relocatable interpreter
+([python-build-standalone](https://github.com/astral-sh/python-build-standalone))
+and point the kernel at it:
+
+```bash
+desktop/build-python-bundle.sh          # downloads a relocatable CPython
+PATINA_PYTHON=desktop/bundle/python ./target/debug/patina
+```
+
+The kernel sets `PYTHONHOME` to `$PATINA_PYTHON` (else a `python/` dir beside the
+kernel binary). For *full* independence rebuild the kernel against that interpreter
+(`PYO3_PYTHON=…/python/bin/python3 cargo build -p patina-kernel-python`) so it links
+the bundled `libpython`. The **JavaScript** (boa) kernel already needs nothing from
+the host.
 
 ## Status
 
