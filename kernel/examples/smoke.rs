@@ -34,7 +34,12 @@ fn main() {
 
     // sibling of this example binary: target/debug/examples/smoke -> target/debug/patina-kernel
     let exe = std::env::current_exe().unwrap();
-    let kernel_bin = exe.parent().unwrap().parent().unwrap().join("patina-kernel");
+    let kernel_bin = exe
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("patina-kernel");
     eprintln!("[harness] launching {kernel_bin:?}");
     let mut child = Command::new(&kernel_bin)
         .env("KERNEL_CONNECT", format!("127.0.0.1:{port}"))
@@ -76,7 +81,10 @@ fn main() {
         };
         match parse_from_kernel_message(&frame).unwrap() {
             FromKernelMessage::Output {
-                value, flag, update, ..
+                value,
+                flag,
+                update,
+                ..
             } => {
                 eprintln!("[harness] OUTPUT flag={flag:?} value={value:?}");
                 if let Some(u) = update {

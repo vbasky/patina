@@ -250,10 +250,7 @@ fn save_helper(
             }
         } else {
             // Refresh the listing for the folder the new notebook landed in.
-            let rel_dir = path
-                .parent()
-                .map(workspace::relativize)
-                .unwrap_or_default();
+            let rel_dir = path.parent().map(workspace::relativize).unwrap_or_default();
             if let Ok(message) = query_helper(&mut state, &rel_dir) {
                 if let Some(notebook) = state.get_notebook_by_id(notebook_id) {
                     notebook.send_raw_message(message)
@@ -417,8 +414,8 @@ pub(crate) fn upload_file(
 
     match ext.as_str() {
         "tsnb" => {
-            let abs =
-                workspace::resolve(&msg.path).ok_or_else(|| anyhow!("Invalid path: {}", msg.path))?;
+            let abs = workspace::resolve(&msg.path)
+                .ok_or_else(|| anyhow!("Invalid path: {}", msg.path))?;
             if let Some(parent) = abs.parent() {
                 std::fs::create_dir_all(parent)?;
             }

@@ -9,8 +9,9 @@
 use crate::messages::{ComputeMsg, KernelOutputValue, OutputFlag};
 use crate::scopes::SerializedGlobals;
 use crate::{
-    make_protocol_builder, parse_to_kernel_message, serialize_from_kernel_message,
+    make_protocol_builder,
     messages::{FromKernelMessage, ToKernelMessage},
+    parse_to_kernel_message, serialize_from_kernel_message,
 };
 use anyhow::anyhow;
 use futures_util::SinkExt;
@@ -46,7 +47,10 @@ pub enum FromExecutorMessage {
 }
 
 /// Flatten a code group into its leaves in document order.
-pub fn collect_leaves<'a>(group: &'a crate::messages::CodeGroup, out: &mut Vec<&'a crate::messages::CodeLeaf>) {
+pub fn collect_leaves<'a>(
+    group: &'a crate::messages::CodeGroup,
+    out: &mut Vec<&'a crate::messages::CodeLeaf>,
+) {
     use crate::messages::CodeNode;
     for child in &group.children {
         match child {
@@ -114,7 +118,9 @@ where
                     FromKernelMessage::LoadStateResponse { path, result }
                 }
             };
-            sender.send(serialize_from_kernel_message(out)?.into()).await?;
+            sender
+                .send(serialize_from_kernel_message(out)?.into())
+                .await?;
         }
         Ok::<(), anyhow::Error>(())
     };

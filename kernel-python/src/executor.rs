@@ -109,11 +109,7 @@ pub fn spawn_executor(
     });
 }
 
-fn run_compute(
-    globals: &Py<PyDict>,
-    m: &ComputeMsg,
-    tx: &UnboundedSender<FromExecutorMessage>,
-) {
+fn run_compute(globals: &Py<PyDict>, m: &ComputeMsg, tx: &UnboundedSender<FromExecutorMessage>) {
     let mut leaves = Vec::new();
     collect_leaves(&m.code, &mut leaves);
     let cell_id = m.cell_id;
@@ -138,7 +134,9 @@ fn run_compute(
         let helpers = PyDict::new(py);
         let driver = CString::new(DRIVER).unwrap();
         py.run(driver.as_c_str(), Some(&helpers), None)?;
-        let run_fn = helpers.get_item("_patina_run")?.expect("_patina_run defined");
+        let run_fn = helpers
+            .get_item("_patina_run")?
+            .expect("_patina_run defined");
         let collect_fn = helpers
             .get_item("_patina_collect")?
             .expect("_patina_collect defined");
@@ -171,7 +169,11 @@ fn run_compute(
 
     let (captured, outs, err_value) = match outcome {
         Ok(v) => v,
-        Err(e) => (String::new(), Vec::new(), Some(Python::with_gil(|py| error_to_value(py, &e)))),
+        Err(e) => (
+            String::new(),
+            Vec::new(),
+            Some(Python::with_gil(|py| error_to_value(py, &e))),
+        ),
     };
 
     // Stream captured stdout/stderr first (Running).

@@ -38,7 +38,11 @@ pub(crate) async fn http_server_main(state: AppStateRef, port: u16) -> anyhow::R
         stdout.set_color(ColorSpec::new().set_fg(Some(Color::Ansi256(37))))?;
         write!(&mut stdout, "ina")?;
         stdout.set_color(ColorSpec::new().set_fg(None))?;
-        write!(&mut stdout, " v{} — Rust notebook", env!("CARGO_PKG_VERSION"))?;
+        write!(
+            &mut stdout,
+            " v{} — Rust notebook",
+            env!("CARGO_PKG_VERSION")
+        )?;
         stdout.set_color(ColorSpec::new().set_bold(true))?;
         write!(&mut stdout, "\n\n   ➜ http://127.0.0.1:{port}",)?;
         stdout.set_color(ColorSpec::new().set_fg(Some(Color::Ansi256(248))))?;

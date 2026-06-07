@@ -14,7 +14,9 @@ pub(crate) fn root() -> &'static Path {
     ROOT.get_or_init(|| {
         let root = match std::env::var_os("PATINA_WORKSPACE") {
             Some(p) => PathBuf::from(p),
-            None => std::env::current_dir().unwrap_or_default().join("notebooks"),
+            None => std::env::current_dir()
+                .unwrap_or_default()
+                .join("notebooks"),
         };
         let _ = std::fs::create_dir_all(&root);
         root.canonicalize().unwrap_or(root)

@@ -127,7 +127,9 @@ fn run_compute(context: &mut CommandContext, m: &ComputeMsg) -> FromExecutorMess
             update: Some(globals),
         },
         None => {
-            let value = last_outputs.map(outputs_to_value).unwrap_or(KernelOutputValue::None);
+            let value = last_outputs
+                .map(outputs_to_value)
+                .unwrap_or(KernelOutputValue::None);
             FromExecutorMessage::Output {
                 value,
                 cell_id: m.cell_id,
