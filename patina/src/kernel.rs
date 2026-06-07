@@ -178,6 +178,7 @@ pub fn spawn_kernel(
     kernel_ctx: KernelCtx,
     kernel_port: u16,
     language: Language,
+    env: &[(String, String)],
 ) -> anyhow::Result<KernelHandle> {
     let program = locate_kernel(language)?;
     let mut cmd = tokio::process::Command::new(program);
@@ -191,6 +192,10 @@ pub fn spawn_kernel(
         .stdout(Stdio::from(stdout_file))
         .stderr(Stdio::from(stderr_file))
         .kill_on_drop(true);
+    // User-configured toolchain paths (PATINA_TOOLCHAIN / PATINA_PYTHON / …).
+    for (k, v) in env {
+        cmd.env(k, v);
+    }
     tracing::debug!("Spawning new kernel command {:?}", &cmd);
     let child = cmd.spawn()?;
     let pid = child.id().unwrap_or(0);

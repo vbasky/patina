@@ -2,8 +2,8 @@ use crate::client_messages::{
     FromClientMessage, ToClientMessage, parse_client_message, serialize_client_message,
 };
 use crate::reactor::{
-    close_run, delete_file, fork_run, load_notebook, new_notebook, query_dir, run_code,
-    save_notebook, set_language, start_kernel, upload_file,
+    close_run, delete_file, fork_run, load_notebook, new_notebook, query_dir, query_settings,
+    run_code, save_notebook, set_language, set_toolchains, start_kernel, upload_file,
 };
 use crate::state::{AppState, AppStateRef};
 use anyhow::bail;
@@ -181,6 +181,12 @@ fn process_client_message(
         }
         FromClientMessage::SetLanguage(msg) => {
             set_language(state, msg.notebook_id, msg.language)?;
+        }
+        FromClientMessage::SetToolchains(settings) => {
+            set_toolchains(state, settings);
+        }
+        FromClientMessage::QuerySettings => {
+            query_settings(state, sender)?;
         }
         FromClientMessage::CloseRun(msg) => {
             close_run(state, msg.notebook_id, msg.run_id)?;

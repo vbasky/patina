@@ -81,6 +81,16 @@ interface Error {
   message: string;
 }
 
+export interface Toolchains {
+  rust_toolchain: string | null;
+  python: string | null;
+  node: string | null;
+}
+
+interface SettingsMsg extends Toolchains {
+  type: "Settings";
+}
+
 export type ToClientMessage =
   | Error
   | NewNotebookMsg
@@ -89,6 +99,7 @@ export type ToClientMessage =
   | OutputMsg
   | NewGlobalsMsg
   | SaveCompletedMsg
+  | SettingsMsg
   | DirList;
 
 interface CreateNewNotebookMsg {
@@ -142,6 +153,14 @@ interface DeleteFileMsg {
   path: string;
 }
 
+interface SetToolchainsMsg extends Toolchains {
+  type: "SetToolchains";
+}
+
+interface QuerySettingsMsg {
+  type: "QuerySettings";
+}
+
 interface SetLanguageMsg {
   type: "SetLanguage";
   notebook_id: NotebookId;
@@ -173,6 +192,8 @@ export type FromClientMessage =
   | UploadFileMsg
   | DeleteFileMsg
   | SetLanguageMsg
+  | SetToolchainsMsg
+  | QuerySettingsMsg
   | SaveNotebookMsg;
 
 export function processMessage(
@@ -250,6 +271,17 @@ export function processMessage(
         type: "set_dir_entries",
         dir: message.dir,
         entries: message.entries,
+      });
+      break;
+    }
+    case "Settings": {
+      dispatch({
+        type: "set_settings",
+        settings: {
+          rust_toolchain: message.rust_toolchain,
+          python: message.python,
+          node: message.node,
+        },
       });
       break;
     }

@@ -1,6 +1,7 @@
 use crate::client_messages::KernelInfo;
 use crate::kernel::KernelHandle;
 use crate::notebook::{KernelId, Notebook, NotebookId};
+use crate::settings::Settings;
 use anyhow::anyhow;
 use rand::Rng;
 use rand::distr::Alphanumeric;
@@ -14,6 +15,7 @@ pub(crate) struct AppState {
     kernel_port: u16,
     http_port: u16,
     secret_key: String,
+    settings: Settings,
 }
 
 pub(crate) type AppStateRef = Arc<Mutex<AppState>>;
@@ -35,7 +37,17 @@ impl AppState {
             kernel_port: 0,
             http_port,
             secret_key: secret_key.unwrap_or_else(generate_key),
+            settings: Settings::load(),
         }
+    }
+
+    pub fn settings(&self) -> &Settings {
+        &self.settings
+    }
+
+    pub fn set_settings(&mut self, settings: Settings) {
+        settings.save();
+        self.settings = settings;
     }
 
     pub(crate) fn secret_key(&self) -> &str {

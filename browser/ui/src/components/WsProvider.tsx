@@ -43,6 +43,9 @@ export const WsProvider = (props: { children: JSX.Element }) => {
         type: "QueryDir",
         path: "",
       });
+      sendJsonMessage({
+        type: "QuerySettings",
+      });
     }
   }, [readyState]);
 

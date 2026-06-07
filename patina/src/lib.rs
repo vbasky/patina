@@ -5,6 +5,7 @@ mod http;
 mod kernel;
 mod notebook;
 mod reactor;
+mod settings;
 mod state;
 mod storage;
 mod utils;

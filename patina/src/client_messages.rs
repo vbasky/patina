@@ -18,6 +18,8 @@ pub(crate) enum FromClientMessage {
     UploadFile(UploadFileMsg),
     DeleteFile(DeleteFileMsg),
     SetLanguage(SetLanguageMsg),
+    SetToolchains(crate::settings::Settings),
+    QuerySettings,
     CloseRun(NotebookRunMsg),
     KernelList,
     Fork(ForkMsg),
@@ -191,6 +193,11 @@ pub(crate) enum ToClientMessage<'a> {
         /// root ("" = root).
         dir: &'a str,
         entries: &'a [DirEntry],
+    },
+    Settings {
+        rust_toolchain: Option<String>,
+        python: Option<String>,
+        node: Option<String>,
     },
     Kernels {
         kernels: Vec<KernelInfo>,

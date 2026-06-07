@@ -51,8 +51,9 @@ pub(crate) fn start_kernel(
     run_title: String,
 ) -> anyhow::Result<KernelId> {
     let kernel_port = state.kernel_port();
+    let language = state.find_notebook_by_id_mut(notebook_id)?.language;
+    let env = state.settings().kernel_env(language);
     let notebook = state.find_notebook_by_id_mut(notebook_id)?;
-    let language = notebook.language;
     let kernel_id = KernelId::new(Uuid::new_v4());
     let kernel_ctx = KernelCtx {
         kernel_id,
@@ -67,7 +68,7 @@ pub(crate) fn start_kernel(
         Timestamp::now(),
     );
     notebook.add_run(run_id, run);
-    match spawn_kernel(state_ref, kernel_ctx, kernel_port, language) {
+    match spawn_kernel(state_ref, kernel_ctx, kernel_port, language, &env) {
         Ok(kernel) => {
             state.add_kernel(kernel_id, kernel);
         }
@@ -270,6 +271,26 @@ pub(crate) fn set_language(
 ) -> anyhow::Result<()> {
     let notebook = state.find_notebook_by_id_mut(notebook_id)?;
     notebook.language = language;
+    Ok(())
+}
+
+/// Persist updated toolchain settings (applied to the next kernel spawned).
+pub(crate) fn set_toolchains(state: &mut AppState, settings: crate::settings::Settings) {
+    state.set_settings(settings);
+}
+
+/// Send the current settings to a client.
+pub(crate) fn query_settings(
+    state: &AppState,
+    sender: &UnboundedSender<Message>,
+) -> anyhow::Result<()> {
+    let s = state.settings();
+    let msg = serialize_client_message(ToClientMessage::Settings {
+        rust_toolchain: s.rust_toolchain.clone(),
+        python: s.python.clone(),
+        node: s.node.clone(),
+    })?;
+    let _ = sender.send(msg);
     Ok(())
 }
 

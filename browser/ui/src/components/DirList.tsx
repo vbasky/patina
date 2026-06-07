@@ -6,6 +6,7 @@ import {
   LuHouse,
   LuNotebook,
   LuPlus,
+  LuSettings,
   LuTrash2,
   LuUpload,
 } from "react-icons/lu";
@@ -16,6 +17,7 @@ import { loadNotebook } from "../core/actions";
 import { DirEntry } from "../core/state";
 import { Language } from "../core/notebook";
 import { LanguageIcon } from "./LanguageIcon";
+import { SettingsModal } from "./SettingsModal";
 
 const LANGUAGES: Language[] = ["Rust", "Python", "JavaScript"];
 
@@ -45,6 +47,7 @@ const NotebookList = () => {
   const dispatch = useDispatch()!;
   const fileInput = useRef<HTMLInputElement>(null);
   const [newLang, setNewLang] = useState<Language>("Rust");
+  const [showSettings, setShowSettings] = useState(false);
 
   const dir = state.current_dir;
   const openDir = (path: string) => sendCommand({ type: "QueryDir", path });
@@ -141,7 +144,16 @@ const NotebookList = () => {
         >
           <LuPlus size={16} />
         </button>
+        <button
+          type="button"
+          onClick={() => setShowSettings(true)}
+          title="Toolchain settings"
+          className="rounded-md p-1.5 text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-[#2d2d2d]"
+        >
+          <LuSettings size={16} />
+        </button>
       </div>
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
 
       <div className="flex items-center justify-between gap-2 px-3 pb-2">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">

@@ -1,5 +1,3 @@
-import { applyGlobalsUpdate } from "./jobject";
-import { SerializedGlobals, SerializedGlobalsUpdate } from "./messages";
 import {
   EditorGroupNode,
   EditorNode,
@@ -17,6 +15,9 @@ import {
   RunViewMode,
   TextOutputValue,
 } from "./notebook";
+import { SerializedGlobals, SerializedGlobalsUpdate, Toolchains } from "./messages";
+
+import { applyGlobalsUpdate } from "./jobject";
 
 interface SetSelectedNotebookAction {
   type: "set_selected_notebook";
@@ -151,6 +152,11 @@ interface SetNotebookLanguage {
   language: Language;
 }
 
+interface SetSettings {
+  type: "set_settings";
+  settings: Toolchains;
+}
+
 interface SetDialog {
   type: "set_dialog";
   dialog: DialogConfig | null;
@@ -184,6 +190,7 @@ export type StateAction =
   | SetSelectedNotebookAction
   | SetDirEntries
   | SetNotebookLanguage
+  | SetSettings
   | SaveNotebookAction
   | CloseRunAction
   | ToggleEditorNode
@@ -207,6 +214,8 @@ export interface State {
   // Directory currently shown in the file browser, relative to the project
   // root ("" = root).
   current_dir: string;
+  // User-configured toolchain paths (Rust/Python/Node).
+  settings: Toolchains;
   selected_notebook: Notebook | null;
   dialog: DialogConfig | null;
 }
@@ -215,14 +224,14 @@ function updateNotebooks(state: State, notebook: Notebook): State {
   return {
     ...state,
     notebooks: state.notebooks.map((n) => {
-      if (n.id == notebook.id) {
+      if (n.id === notebook.id) {
         return notebook;
       } else {
         return n;
       }
     }),
     selected_notebook:
-      state.selected_notebook?.id == notebook.id
+      state.selected_notebook?.id === notebook.id
         ? notebook
         : state.selected_notebook,
   };
@@ -257,7 +266,7 @@ function updateEditor(
   return {
     ...node,
     children: node.children.map((c) => {
-      if (c.id == path[0]) {
+      if (c.id === path[0]) {
         return updateEditor(c, path.slice(1), target);
       } else {
         return c;
@@ -270,7 +279,7 @@ export function stateReducer(state: State, action: StateAction): State {
   console.log("action", action);
   switch (action.type) {
     case "update_editor_node": {
-      const notebook = state.notebooks.find((n) => n.id == action.notebook_id)!;
+      const notebook = state.notebooks.find((n) => n.id === action.notebook_id)!;
       const editor_node = getEditorNode(notebook.editor_root, action.path);
       if (!editor_node) {
         return state;
@@ -283,7 +292,7 @@ export function stateReducer(state: State, action: StateAction): State {
       return updateNotebooks(state, updated_notebook);
     }
     case "new_editor_node": {
-      const notebook = state.notebooks.find((n) => n.id == action.notebook_id)!;
+      const notebook = state.notebooks.find((n) => n.id === action.notebook_id)!;
       let editor_root;
       let editor_open_nodes = notebook.editor_open_nodes;
       if (action.insert_type === "child") {
@@ -316,15 +325,15 @@ export function stateReducer(state: State, action: StateAction): State {
           children:
             action.insert_type === "before"
               ? [
-                  ...parent_node.children.slice(0, idx),
-                  action.editor_node,
-                  ...parent_node.children.slice(idx),
-                ]
+                ...parent_node.children.slice(0, idx),
+                action.editor_node,
+                ...parent_node.children.slice(idx),
+              ]
               : [
-                  ...parent_node.children.slice(0, idx + 1),
-                  action.editor_node,
-                  ...parent_node.children.slice(idx + 1),
-                ],
+                ...parent_node.children.slice(0, idx + 1),
+                action.editor_node,
+                ...parent_node.children.slice(idx + 1),
+              ],
         } as EditorNode);
       }
       const new_notebook = {
@@ -335,7 +344,7 @@ export function stateReducer(state: State, action: StateAction): State {
       return updateNotebooks(state, new_notebook);
     }
     case "remove_editor_node": {
-      const notebook = state.notebooks.find((n) => n.id == action.notebook_id)!;
+      const notebook = state.notebooks.find((n) => n.id === action.notebook_id)!;
       const path = action.path.slice(0, -1);
       const parent_node = getEditorNode(notebook.editor_root, path);
       if (parent_node === null || parent_node.type !== "Group") {
@@ -360,7 +369,7 @@ export function stateReducer(state: State, action: StateAction): State {
       return updateNotebooks(state, new_notebook);
     }
     case "move_editor_node": {
-      const notebook = state.notebooks.find((n) => n.id == action.notebook_id)!;
+      const notebook = state.notebooks.find((n) => n.id === action.notebook_id)!;
       const parentPath = action.path.slice(0, -1);
       const parent = getEditorNode(notebook.editor_root, parentPath);
       if (parent === null || parent.type !== "Group") {
@@ -406,7 +415,7 @@ export function stateReducer(state: State, action: StateAction): State {
       } as Notebook;
 
       const dir_entries = state.dir_entries.map((e) =>
-        e.path == path
+        e.path === path
           ? ({ ...e, entry_type: "LoadedNotebook" } as DirEntry)
           : e,
       );
@@ -462,11 +471,11 @@ export function stateReducer(state: State, action: StateAction): State {
       return updateNotebooks(state, new_notebook);
     }
     case "kernel_changed": {
-      const notebook = state.notebooks.find((n) => n.id == action.notebook_id)!;
+      const notebook = state.notebooks.find((n) => n.id === action.notebook_id)!;
       const new_notebook = {
         ...notebook,
         runs: notebook.runs.map((r) => {
-          if (r.id == action.run_id) {
+          if (r.id === action.run_id) {
             if (
               action.kernel_state.type == "Running" &&
               r.output_cells.length > 0
@@ -514,7 +523,7 @@ export function stateReducer(state: State, action: StateAction): State {
       const new_notebook = {
         ...notebook,
         runs: notebook.runs.map((r) =>
-          r.id == action.run_id ? ({ ...r, output_cells: [] } as Run) : r,
+          r.id === action.run_id ? ({ ...r, output_cells: [] } as Run) : r,
         ),
       };
       return updateNotebooks(state, new_notebook);
@@ -623,7 +632,7 @@ export function stateReducer(state: State, action: StateAction): State {
       return updateNotebooks(state, new_notebook);
     }
     case "save_notebook": {
-      const notebook = state.notebooks.find((n) => n.id == action.notebook_id)!;
+      const notebook = state.notebooks.find((n) => n.id === action.notebook_id)!;
       const new_notebook = {
         ...notebook,
         save_in_progress: action.save_in_progress,
@@ -638,12 +647,15 @@ export function stateReducer(state: State, action: StateAction): State {
       };
     }
     case "set_notebook_language": {
-      const notebook = state.notebooks.find((n) => n.id == action.notebook_id);
+      const notebook = state.notebooks.find((n) => n.id === action.notebook_id);
       if (!notebook) return state;
       return updateNotebooks(state, { ...notebook, language: action.language });
     }
+    case "set_settings": {
+      return { ...state, settings: action.settings };
+    }
     case "set_run_view_mode": {
-      const notebook = state.notebooks.find((n) => n.id == action.notebook_id)!;
+      const notebook = state.notebooks.find((n) => n.id === action.notebook_id)!;
       const new_notebook = {
         ...notebook,
         runs: notebook.runs.map((r) =>
@@ -656,12 +668,12 @@ export function stateReducer(state: State, action: StateAction): State {
       return { ...state, dialog: action.dialog };
     }
     case "toggle_open_object": {
-      const notebook = state.notebooks.find((n) => n.id == action.notebook_id)!;
+      const notebook = state.notebooks.find((n) => n.id === action.notebook_id)!;
 
       const new_notebook = {
         ...notebook,
         runs: notebook.runs.map((r) => {
-          if (r.id == action.run_id) {
+          if (r.id === action.run_id) {
             const open_objects = new Set(r.open_objects);
             if (open_objects.has(action.object_path)) {
               open_objects.delete(action.object_path);
@@ -686,6 +698,7 @@ export const INITIAL_STATE: State = {
   notebooks: [],
   dir_entries: [],
   current_dir: "",
+  settings: { rust_toolchain: null, python: null, node: null },
   selected_notebook: null,
   dialog: null,
 };
