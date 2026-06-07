@@ -1,6 +1,6 @@
 # Patina
 
-![patina — a Rust-native interactive notebook for Rust, Python and JavaScript](https://raw.githubusercontent.com/vbasky/patina/main/docs/banner.svg)
+![patina — a Rust-native interactive notebook for Rust, Python and JavaScript](https://raw.githubusercontent.com/vbasky/patina/main/docs/banner.png)
 
 **Name:** *patina* is the sheen that forms on metal as it weathers and oxidizes — i.e.
 *rust*. A nod to **Rust**, the language the whole stack (server, kernels, even the
