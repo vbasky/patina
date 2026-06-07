@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Command } from "../core/commands";
+import type { Command } from "../core/commands";
 
 const CommandPalette: React.FC<{
   commands: Command[];

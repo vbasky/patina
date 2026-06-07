@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import {
   LuListTree,
   LuMenu,
@@ -7,7 +7,7 @@ import {
   LuX,
 } from "react-icons/lu";
 import { closeRun, forkRun, newRun } from "../core/actions";
-import { Notebook, Run } from "../core/notebook";
+import type { Notebook, Run } from "../core/notebook";
 import { PopupMenu } from "./PopupMenu";
 import RunView from "./RunView";
 import { useDispatch } from "./StateProvider";

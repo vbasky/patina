@@ -1,8 +1,8 @@
 import {
-  EditorNode,
-  EditorNodeId,
+  type EditorNode,
+  type EditorNodeId,
   EditorScope,
-  Notebook,
+  type Notebook,
 } from "../core/notebook";
 import { LuFolderPlus, LuPencil, LuPlus, LuTrash2 } from "react-icons/lu";
 import {
@@ -11,7 +11,7 @@ import {
   removeEditorNode,
 } from "../core/actions";
 
-import React from "react";
+import type React from "react";
 import { TbCircleDashed } from "react-icons/tb";
 import { focusId } from "../core/focus";
 import { useDispatch } from "./StateProvider";

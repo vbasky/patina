@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   LuEraser,
   LuListTree,
@@ -7,7 +8,7 @@ import {
   LuSquare,
 } from "react-icons/lu";
 import { clearOutputs, closeRun, newRun, runAll } from "../core/actions";
-import { KernelState, Notebook } from "../core/notebook";
+import type { KernelState, Notebook } from "../core/notebook";
 import EditorPanel from "./EditorPanel";
 import { usePushNotification } from "./NotificationProvider";
 import { useDispatch } from "./StateProvider";

@@ -1,7 +1,7 @@
-import { createContext, JSX, useContext, useEffect, useState } from "react";
-import { processMessage, SendCommand, ToClientMessage } from "../core/messages";
+import { createContext, type JSX, useContext, useEffect, useState } from "react";
+import { processMessage, type SendCommand, type ToClientMessage } from "../core/messages";
 import useWebSocket, { ReadyState } from "react-use-websocket";
-import { SendJsonMessage } from "react-use-websocket/dist/lib/types";
+import type { SendJsonMessage } from "react-use-websocket/dist/lib/types";
 import { useDispatch } from "./StateProvider";
 import ErrorScreen from "./ErrorScreen";
 import LoadingScreen from "./LoadingScreen";
@@ -54,7 +54,7 @@ export const WsProvider = (props: { children: JSX.Element }) => {
       return;
     }
     console.log("Got a new message: ", lastJsonMessage);
-    let message = lastJsonMessage as ToClientMessage;
+    const message = lastJsonMessage as ToClientMessage;
     processMessage(message, dispatch, pushNotification);
   }, [lastJsonMessage]);
 

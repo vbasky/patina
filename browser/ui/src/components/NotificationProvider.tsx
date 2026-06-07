@@ -1,5 +1,6 @@
 // NotificationContext.tsx
-import React, { createContext, useContext, useState, useCallback } from "react";
+import type React from "react";
+import { createContext, useContext, useState, useCallback } from "react";
 import { LuX, LuCircleAlert, LuCircleCheck } from "react-icons/lu";
 
 // Define types

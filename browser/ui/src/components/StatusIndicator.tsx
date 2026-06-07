@@ -1,6 +1,6 @@
-import React from "react";
+import type React from "react";
 import { LuLoaderCircle, LuX, LuCircle } from "react-icons/lu";
-import { KernelState } from "../core/notebook";
+import type { KernelState } from "../core/notebook";
 
 interface StatusIndicatorProps {
   status: KernelState;

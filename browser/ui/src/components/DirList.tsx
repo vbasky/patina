@@ -14,8 +14,8 @@ import { useRef, useState } from "react";
 import { useSendCommand } from "./WsProvider";
 import { useDispatch, useGlobalState } from "./StateProvider";
 import { loadNotebook } from "../core/actions";
-import { DirEntry } from "../core/state";
-import { Language } from "../core/notebook";
+import type { DirEntry } from "../core/state";
+import type { Language } from "../core/notebook";
 import { LanguageIcon } from "./LanguageIcon";
 import { SettingsModal } from "./SettingsModal";
 

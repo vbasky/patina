@@ -1,5 +1,5 @@
 import { SiJavascript, SiPython, SiRust } from "react-icons/si";
-import { Language } from "../core/notebook";
+import type { Language } from "../core/notebook";
 
 // Brand icon for a notebook language, in its conventional accent color.
 export const LanguageIcon: React.FC<{ language: Language; size?: number }> = ({

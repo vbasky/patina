@@ -1,4 +1,4 @@
-import { Run } from "../core/notebook";
+import type { Run } from "../core/notebook";
 import OutputCell from "./OutputCell";
 
 const RunView: React.FC<{ run: Run }> = (props: { run: Run }) => {

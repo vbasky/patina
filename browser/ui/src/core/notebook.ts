@@ -1,5 +1,5 @@
-import { JsonObjectStruct } from "./jobject";
-import { SerializedGlobals } from "./messages";
+import type { JsonObjectStruct } from "./jobject";
+import type { SerializedGlobals } from "./messages";
 
 export type RunId = string;
 export type NotebookId = number;

@@ -1,5 +1,5 @@
-import { Dispatch } from "react";
-import {
+import type { Dispatch } from "react";
+import type {
   EditorGroupNode as EditorGroup,
   EditorNode,
   EditorNodeId,
@@ -11,8 +11,8 @@ import {
   OutputValue,
   RunId,
 } from "./notebook";
-import { DirEntry, StateAction } from "./state";
-import { NotificationType } from "../components/NotificationProvider";
+import type { DirEntry, StateAction } from "./state";
+import type { NotificationType } from "../components/NotificationProvider";
 
 export type SendCommand = (message: FromClientMessage) => void;
 

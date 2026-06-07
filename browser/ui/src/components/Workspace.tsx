@@ -1,5 +1,5 @@
 import { LuChevronDown, LuChevronRight, LuGlobe } from "react-icons/lu";
-import { Globals, NotebookId, Run } from "../core/notebook";
+import type { Globals, NotebookId, Run } from "../core/notebook";
 import ObjectTreeNode from "./ObjectTreeNode";
 import { useDispatch } from "./StateProvider";
 

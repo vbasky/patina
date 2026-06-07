@@ -1,13 +1,13 @@
 import {
-  EditorCell,
-  EditorGroupNode,
-  EditorNode,
-  EditorNodeId,
+  type EditorCell,
+  type EditorGroupNode,
+  type EditorNode,
+  type EditorNodeId,
   EditorScope,
-  Language,
-  Notebook,
-  OutputCell,
-  Run,
+  type Language,
+  type Notebook,
+  type OutputCell,
+  type Run,
 } from "../core/notebook";
 
 const LANGUAGES: Language[] = ["Rust", "Python", "JavaScript"];
@@ -26,7 +26,8 @@ import {
   LuText,
   LuTrash2,
 } from "react-icons/lu";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import type React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { isMarkdownCell, markdownSource, toCode, toMarkdown } from "../core/cells";
 import {
   newEditorCode,

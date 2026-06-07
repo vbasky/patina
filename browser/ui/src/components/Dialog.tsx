@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
 import { LuX } from "react-icons/lu";
-import { DialogConfig } from "../core/state";
+import type { DialogConfig } from "../core/state";
 import { useDispatch } from "./StateProvider";
 
 interface ModalProps {

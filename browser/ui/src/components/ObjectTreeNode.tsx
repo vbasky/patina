@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import {
   LuChevronRight,
   LuChevronDown,
@@ -11,7 +11,7 @@ import {
   LuCog,
 } from "react-icons/lu";
 import { VscCircle } from "react-icons/vsc";
-import { JsonObjectId, JsonObjectStruct } from "../core/jobject";
+import type { JsonObjectId, JsonObjectStruct } from "../core/jobject";
 
 // Tree Node Component
 const ObjectTreeNode: React.FC<{
@@ -57,7 +57,7 @@ const ObjectTreeNode: React.FC<{
     if (object.kind === "callable") {
       return <LuCog className="text-purple-600" size={16} />;
     }
-    if (object.kind?.length ?? 0 > 0) {
+    if ((object.kind?.length ?? 0) > 0) {
       return <VscCircle className="text-blue-500" size={16} />;
     }
     return <LuSquare className="text-blue-600" size={16} />;
@@ -96,7 +96,7 @@ const ObjectTreeNode: React.FC<{
     );
   };
 
-  const hasChildren = object.children?.length ?? 0 > 0;
+  const hasChildren = (object.children?.length ?? 0) > 0;
 
   // Render children
   const renderChildren = () => {

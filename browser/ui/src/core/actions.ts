@@ -1,20 +1,20 @@
-import { Dispatch } from "react";
+import type { Dispatch } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { focusId } from "./focus";
-import { PushNotification } from "../components/NotificationProvider";
-import { SendCommand } from "./messages";
+import type { PushNotification } from "../components/NotificationProvider";
+import type { SendCommand } from "./messages";
 import {
-  EditorCell,
-  EditorNode,
-  EditorNodeId,
+  type EditorCell,
+  type EditorNode,
+  type EditorNodeId,
   EditorScope,
-  Notebook,
-  NotebookId,
-  OutputCellFlag,
-  Run,
-  RunId,
+  type Notebook,
+  type NotebookId,
+  type OutputCellFlag,
+  type Run,
+  type RunId,
 } from "./notebook";
-import { InsertType, State, StateAction } from "./state";
+import type { InsertType, State, StateAction } from "./state";
 import { isMarkdownCell } from "./cells";
 
 export function newRun(
@@ -49,7 +49,7 @@ export function extractRunNode(
   if (node.type === "Cell") {
     return node;
   }
-  let child = node.children.find((c) => c.id === path[0])!;
+  const child = node.children.find((c) => c.id === path[0])!;
   return {
     name: node.name,
     id: node.id,
@@ -73,7 +73,7 @@ export function runCode(
   if (run_id === null) {
     run_id = newRun(notebook, dispatch, send_command);
   } else {
-    let run = notebook.runs.find((r) => r.id === run_id)!;
+    const run = notebook.runs.find((r) => r.id === run_id)!;
     if (
       run.kernel_state.type === "Crashed" ||
       run.kernel_state.type === "Closed"
@@ -91,7 +91,7 @@ export function runCode(
       flag = "Running";
     }
   }
-  let cell_id = uuidv4();
+  const cell_id = uuidv4();
   dispatch({
     type: "new_output_cell",
     notebook_id: notebook.id,

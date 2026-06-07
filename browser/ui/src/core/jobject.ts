@@ -1,5 +1,5 @@
-import { SerializedGlobalsUpdate } from "./messages";
-import { Globals } from "./notebook";
+import type { SerializedGlobalsUpdate } from "./messages";
+import type { Globals } from "./notebook";
 
 export type JsonObjectId = number;
 

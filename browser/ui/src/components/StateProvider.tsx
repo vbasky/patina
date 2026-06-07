@@ -1,6 +1,6 @@
-import { ActionDispatch, createContext, useContext, useReducer } from "react";
-import { INITIAL_STATE, State, StateAction, stateReducer } from "../core/state";
-import { JSX } from "react";
+import { type ActionDispatch, createContext, useContext, useReducer } from "react";
+import { INITIAL_STATE, type State, type StateAction, stateReducer } from "../core/state";
+import type { JSX } from "react";
 
 const StateContext = createContext<State>(INITIAL_STATE);
 const DispatchContext = createContext<ActionDispatch<

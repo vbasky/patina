@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CommandMenu } from "../core/commands";
+import type { CommandMenu } from "../core/commands";
 
 const MenuBar: React.FC<{ menus: CommandMenu[] }> = ({ menus }) => {
   const [open, setOpen] = useState<string | null>(null);

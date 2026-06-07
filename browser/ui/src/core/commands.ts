@@ -1,5 +1,5 @@
-import { Dispatch } from "react";
-import { PushNotification } from "../components/NotificationProvider";
+import type { Dispatch } from "react";
+import type { PushNotification } from "../components/NotificationProvider";
 import {
   clearOutputs,
   closeRun,
@@ -14,9 +14,9 @@ import {
   runCellById,
   saveNotebook,
 } from "./actions";
-import { SendCommand } from "./messages";
-import { Notebook, Run } from "./notebook";
-import { StateAction } from "./state";
+import type { SendCommand } from "./messages";
+import type { Notebook, Run } from "./notebook";
+import type { StateAction } from "./state";
 import { cycleTheme } from "./theme";
 
 export interface Command {
