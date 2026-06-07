@@ -158,19 +158,17 @@ fn locate_kernel(language: Language) -> anyhow::Result<PathBuf> {
     } else {
         base.to_string()
     };
-    if language == Language::Rust {
-        if let Ok(p) = std::env::var("PATINA_KERNEL") {
+    if language == Language::Rust
+        && let Ok(p) = std::env::var("PATINA_KERNEL") {
             return Ok(PathBuf::from(p));
         }
-    }
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(dir) = exe.parent() {
+    if let Ok(exe) = std::env::current_exe()
+        && let Some(dir) = exe.parent() {
             let cand = dir.join(&bin);
             if cand.exists() {
                 return Ok(cand);
             }
         }
-    }
     which::which(base)
         .map_err(|_| anyhow::anyhow!("could not find the `{bin}` binary (is it built?)"))
 }
