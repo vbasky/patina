@@ -1,0 +1,30 @@
+#root {
+  height: 100%;
+}
+
+/* Base table styling — used by rendered markdown cells and the inspectors.
+   Theme-neutral (no hardcoded light backgrounds) so it works in dark mode. */
+table {
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 4px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.patina-md table {
+  width: auto;
+  margin: 0.5em 0;
+}
+
+.patina-md th,
+.patina-md td {
+  border: 1px solid rgba(127, 127, 127, 0.3);
+}
+
+.patina-md thead th {
+  font-weight: 600;
+}

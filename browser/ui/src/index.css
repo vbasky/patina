@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+/* Class-based dark mode (Tailwind v4): toggle `.dark` on <html>. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* JetBrains Mono everywhere `font-mono` is used. */
+@theme {
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+html {
+  background: #ffffff;
+}
+html.dark {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  color-scheme: dark;
+}
+
+.npm__react-simple-code-editor__textarea,
+.patina-md pre,
+.patina-md code {
+  font-family: var(--font-mono);
+}
+
+/* Rendered-markdown cell styling (no typography plugin). */
+.patina-md h1 { font-size: 1.5rem; font-weight: 700; margin: 0.4em 0; }
+.patina-md h2 { font-size: 1.25rem; font-weight: 700; margin: 0.4em 0; }
+.patina-md h3 { font-size: 1.1rem; font-weight: 600; margin: 0.4em 0; }
+.patina-md p { margin: 0.4em 0; }
+.patina-md ul { list-style: disc; padding-left: 1.4em; margin: 0.4em 0; }
+.patina-md ol { list-style: decimal; padding-left: 1.4em; margin: 0.4em 0; }
+.patina-md a { color: #2563eb; text-decoration: underline; }
+.dark .patina-md a { color: #60a5fa; }
+.patina-md code {
+  background: rgba(127, 127, 127, 0.18);
+  padding: 0.05em 0.35em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.patina-md pre {
+  background: rgba(127, 127, 127, 0.14);
+  padding: 0.7em;
+  border-radius: 6px;
+  overflow: auto;
+}
+.patina-md pre code { background: none; padding: 0; }
+
+/* Prism's stock theme paints a translucent background behind operator/entity
+   tokens (&, =>, =, <, >) — it reads as ugly boxes, especially on dark. Kill it. */
+.token.operator,
+.token.entity,
+.token.url {
+  background: none !important;
+}
+
+/* Prism token colors in dark mode (GitHub-dark-ish). */
+.dark pre,
+.dark code,
+.dark .npm__react-simple-code-editor__textarea {
+  color: #c9d1d9;
+  caret-color: #c9d1d9;
+}
+.dark .token.comment,
+.dark .token.prolog,
+.dark .token.doctype,
+.dark .token.cdata { color: #8b949e; }
+.dark .token.punctuation { color: #c9d1d9; }
+.dark .token.keyword,
+.dark .token.tag,
+.dark .token.operator,
+.dark .token.deleted { color: #ff7b72; }
+.dark .token.string,
+.dark .token.char,
+.dark .token.attr-value,
+.dark .token.inserted { color: #a5d6ff; }
+.dark .token.number,
+.dark .token.boolean,
+.dark .token.constant,
+.dark .token.symbol { color: #79c0ff; }
+.dark .token.function,
+.dark .token.class-name,
+.dark .token.macro { color: #d2a8ff; }
+.dark .token.property,
+.dark .token.attr-name,
+.dark .token.variable { color: #ffa657; }
