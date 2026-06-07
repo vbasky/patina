@@ -1,0 +1,17 @@
+[package]
+name = "patina-desktop"
+version = "0.1.0"
+edition = "2024"
+description = "Patina desktop shell (Tauri) — boots the server and opens the UI in a native window"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2"
+uuid = { version = "1", features = ["v4"] }
+
+[features]
+# Tauri's default; keep custom-protocol on for release builds.
+custom-protocol = ["tauri/custom-protocol"]

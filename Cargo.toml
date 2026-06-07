@@ -3,6 +3,9 @@ resolver = "2"
 members = ["patina", "common", "kernel", "kernel-python", "kernel-js"]
 # Server + language kernels.
 default-members = ["patina", "common", "kernel", "kernel-python", "kernel-js"]
+# The Tauri desktop shell is a standalone package (built via `cargo tauri`),
+# not part of the core build.
+exclude = ["desktop/app"]
 
 [workspace.dependencies]
 tokio = "1"

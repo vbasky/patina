@@ -1,0 +1,28 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Patina",
+  "version": "0.1.0",
+  "identifier": "rs.patina.app",
+  "build": {
+    "frontendDist": "../../browser/ui/dist"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": ["icons/icon.png", "icons/icon.icns", "icons/icon.ico"],
+    "externalBin": [
+      "binaries/patina",
+      "binaries/patina-kernel",
+      "binaries/patina-kernel-python",
+      "binaries/patina-kernel-js"
+    ]
+  },
+  "plugins": {}
+}
