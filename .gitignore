@@ -6,3 +6,9 @@ target
 
 # Notebook workspace — user/runtime data, created by the server on first run.
 notebooks/
+
+# Tauri desktop build artifacts
+desktop/app/binaries/
+desktop/app/target/
+desktop/app/gen/
+desktop/bundle/

@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
-# Copy the release server + kernels into desktop/app/binaries/ with the
-# target-triple suffix Tauri expects for `externalBin` sidecars.
-# Run after `cargo build --release` at the repo root.
+# Copy the server + kernels into desktop/app/binaries/ with the target-triple
+# suffix Tauri expects for `externalBin` sidecars.
+#
+#   stage-binaries.sh           # from target/release (for `cargo tauri build`)
+#   stage-binaries.sh debug     # from target/debug   (for `cargo tauri dev`)
+#
+# Run after building the workspace in the matching profile at the repo root.
 set -euo pipefail
 
+PROFILE="${1:-release}"
 TRIPLE="$(rustc -vV | sed -n 's/host: //p')"
 HERE="$(cd "$(dirname "$0")" && pwd)"
-SRC="$(cd "$HERE/../.." && pwd)/target/release"
+SRC="$(cd "$HERE/../.." && pwd)/target/$PROFILE"
 DST="$HERE/binaries"
 EXT=""; case "${OSTYPE:-}" in msys*|cygwin*|win*) EXT=".exe" ;; esac
 
