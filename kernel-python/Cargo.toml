@@ -1,0 +1,18 @@
+[package]
+name = "patina-kernel-python"
+version = "0.1.0"
+edition = "2024"
+description = "Python kernel for Patina — evaluates Python cells via an embedded CPython (pyo3)"
+
+[[bin]]
+name = "patina-kernel-python"
+path = "src/main.rs"
+
+[dependencies]
+comm = { path = "../common" }
+pyo3 = { version = "0.23", features = ["auto-initialize", "abi3-py39"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+anyhow = { workspace = true }
+uuid = { workspace = true, features = ["v4", "serde"] }
