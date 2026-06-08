@@ -1996,6 +1996,7 @@ dependencies = [
  "comm",
  "evcxr",
  "futures-util",
+ "libc",
  "serde",
  "serde_json",
  "tokio",

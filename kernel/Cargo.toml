@@ -19,3 +19,8 @@ anyhow = { workspace = true }
 uuid = { workspace = true, features = ["v4", "serde"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+
+# Advisory lock on the shared evcxr build dir (so concurrent kernels don't
+# corrupt each other's crate files). Unix only; Windows falls back to per-session.
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"

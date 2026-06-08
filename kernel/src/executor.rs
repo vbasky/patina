@@ -44,6 +44,11 @@ pub fn spawn_executor(
     mut rx: UnboundedReceiver<ToExecutorMessage>,
     tx: UnboundedSender<FromExecutorMessage>,
 ) {
+    // Block returning until the executor has finished its one-time warm-up
+    // (context build + rust-analyzer index). The caller logs in to the server
+    // only after we return, so the UI shows "starting kernel" during the warm-up
+    // and the user's first cell runs fast instead of stalling ~30s.
+    let (ready_tx, ready_rx) = std::sync::mpsc::channel::<()>();
     std::thread::spawn(move || {
         let (mut context, outputs) = match CommandContext::new() {
             Ok(v) => v,
@@ -78,6 +83,15 @@ pub fn spawn_executor(
         // `patina_html(&html)` for any HTML table.
         let _ = context.execute(PRELUDE);
 
+        // Warm rust-analyzer. evcxr embeds it to track variables across cells, and
+        // it indexes the sysroot on the first variable-bearing eval (~30s, once
+        // per session, then every cell is fast). Trigger it now — in this thread,
+        // before the cell loop — so the cost overlaps with the user opening and
+        // reading the notebook rather than stalling their first real cell. (This
+        // is the per-session cost that remains after persistent-build-dir caching
+        // makes heavy `:dep`s like polars compile only once per machine.)
+        let _ = context.execute("let _evcxr_warmup = (1..=3i32).sum::<i32>();");
+
         // Batteries-included: opt-in preload of the data crates (polars/plotters/
         // ndarray) so cells can `use` them with no `:dep`. OFF by default — see
         // `batteries_enabled` — because preloading forces a ~55s polars compile
@@ -93,6 +107,9 @@ pub fn spawn_executor(
                 }
             }
         }
+
+        // Warm-up done — let the caller log in and report the kernel ready.
+        let _ = ready_tx.send(());
 
         // Which cell stdout/stderr lines belong to (set before each eval).
         let current: Arc<Mutex<Uuid>> = Arc::new(Mutex::new(Uuid::nil()));
@@ -140,6 +157,10 @@ pub fn spawn_executor(
             }
         }
     });
+
+    // Wait for the warm-up to finish (or the thread to die) before returning, so
+    // readiness is reported only once the kernel can run cells quickly.
+    let _ = ready_rx.recv();
 }
 
 fn run_compute(context: &mut CommandContext, m: &ComputeMsg) -> FromExecutorMessage {

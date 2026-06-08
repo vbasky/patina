@@ -40,6 +40,13 @@ fn main() {
         unsafe { std::env::set_var("POLARS_FMT_TABLE_FORMATTING", "ASCII_FULL_CONDENSED") };
     }
 
+    // Give evcxr a stable, persistent build directory so compiled dependencies
+    // (polars, plotters, …) survive kernel restarts. evcxr otherwise builds in a
+    // throwaway temp dir and recompiles everything each session (~90s for polars
+    // every time). With this, a heavy crate compiles once per machine and later
+    // sessions reuse it (~6s). This is the core "compile once, not every restart".
+    configure_persistent_build_dir();
+
     // evcxr runs rust-analyzer in-process, which is extremely chatty at INFO.
     // Default to WARN; honor RUST_LOG if the user wants more.
     let _ = tracing_subscriber::fmt()
@@ -124,6 +131,52 @@ fn configure_bundled_toolchain() -> bool {
     );
     true
 }
+
+/// Point evcxr at a stable, persistent build directory (via `EVCXR_TMPDIR`) so
+/// compiled dependencies persist across kernel restarts instead of being rebuilt
+/// in a throwaway temp dir every session.
+///
+/// The directory is shared per machine, so it's guarded by an advisory file lock:
+/// the first kernel takes the lock and uses the shared dir; any concurrent kernel
+/// that can't get the lock is left to evcxr's default per-session temp dir (safe,
+/// just no cross-restart reuse for that one). Respects a user-set `EVCXR_TMPDIR`.
+#[cfg(unix)]
+fn configure_persistent_build_dir() {
+    use std::os::unix::io::AsRawFd;
+
+    if std::env::var_os("EVCXR_TMPDIR").is_some() {
+        return; // user/caller override — don't touch it
+    }
+    let Some(home) = std::env::var_os("HOME") else {
+        return;
+    };
+    let dir = PathBuf::from(home).join(".patina").join("evcxr").join("rust");
+    if std::fs::create_dir_all(&dir).is_err() {
+        return;
+    }
+
+    let lock_path = dir.join(".patina-lock");
+    let Ok(file) = std::fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(&lock_path)
+    else {
+        return;
+    };
+    // Non-blocking exclusive lock; auto-released when the process exits (the OS
+    // closes the fd). Held for the whole run by leaking the file handle.
+    let locked = unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } == 0;
+    if locked {
+        std::mem::forget(file);
+        // SAFETY: called early in main, before any threads are spawned.
+        unsafe { std::env::set_var("EVCXR_TMPDIR", &dir) };
+        eprintln!("patina-kernel: persistent build dir {}", dir.display());
+    }
+}
+
+#[cfg(not(unix))]
+fn configure_persistent_build_dir() {}
 
 /// If `sccache` is on PATH and no rustc wrapper is configured, route compiles
 /// through it. Off by default: evcxr's own `:cache` (see `executor.rs`) caches
