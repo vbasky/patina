@@ -1,0 +1,92 @@
+name: desktop
+
+# Builds the installable desktop app (Tauri). Heavy: `cargo tauri build` runs
+# desktop/app/prebuild.sh, which assembles the offline runtime (a relocatable
+# Rust toolchain with the batteries crates vendored + a relocatable CPython) and
+# compiles polars once — so expect long, large builds. Run on demand or on tags.
+#
+# macOS + Linux only: prebuild.sh / build.sh are Unix shell scripts (cp -a,
+# symlinks, …). Windows packaging is not wired up yet.
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: write
+
+jobs:
+  desktop:
+    name: Desktop (${{ matrix.platform.name }})
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - { runner: macos-14, name: macos-aarch64 }
+          - { runner: macos-13, name: macos-x86_64 }
+          - { runner: ubuntu-22.04, name: linux-x86_64 }
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # The Python kernel embeds CPython via pyo3, so a Python must be present to
+      # compile it (separate from the relocatable CPython that gets bundled).
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      # Tauri's Linux webview/packaging dependencies.
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev librsvg2-dev libayatana-appindicator3-dev \
+            build-essential patchelf file
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "^2.0" --locked
+
+      # prebuild.sh (the beforeBuildCommand) builds the UI, the release server +
+      # kernels, stages sidecars, and assembles the offline runtime into resources/.
+      - name: Build desktop app
+        working-directory: desktop/app
+        env:
+          PATINA_REBUILD_BUNDLE: "1"
+        run: cargo tauri build
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: patina-desktop-${{ matrix.platform.name }}
+          if-no-files-found: warn
+          path: |
+            desktop/app/target/release/bundle/**/*.dmg
+            desktop/app/target/release/bundle/**/*.app
+            desktop/app/target/release/bundle/**/*.deb
+            desktop/app/target/release/bundle/**/*.AppImage
+            desktop/app/target/release/bundle/**/*.rpm
+
+  release:
+    name: Attach to release
+    runs-on: ubuntu-latest
+    needs: [desktop]
+    if: ${{ startsWith(github.ref, 'refs/tags/') }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Publish installers to the GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/patina-desktop-*/**

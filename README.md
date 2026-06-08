@@ -212,27 +212,63 @@ answer            // → 42
 
 ## Batteries included
 
-Common data libraries are preloaded so notebooks work out of the box — on by
-default; set `PATINA_BATTERIES=0` for a leaner, faster start.
+The common data libraries are available, but **off by default** so a fresh Rust
+notebook starts instantly (a plain cell compiles in ~1–2s instead of waiting on a
+large crate). Opt in per notebook:
 
-- **Rust** — `polars`, `plotters` (with `evcxr` support), and `ndarray` are
-  pre-`:dep`'d at kernel startup, so cells can just `use polars::prelude::*;`
-  with no `:dep` line.
-- **Python** — `numpy`, `pandas`, and `matplotlib` are installed (binary wheels)
-  into a Patina-managed virtualenv at `~/.patina/pyenv` and added to the kernel's
-  path. This avoids touching the system/Homebrew Python (which is externally
-  managed, PEP 668).
-
-The first launch on a machine pays the cost (compiling the Rust crates / downloading
-the Python wheels); after that it's cached.
+- **Rust** — add the crate with a `:dep` line, e.g.
+  `:dep polars = { version = "0.46", features = ["fmt"] }`, then
+  `use polars::prelude::*;`. It compiles once per machine and is reused across
+  restarts (see *Compile speed*). To instead preload `polars`, `plotters`
+  (with `evcxr` support) and `ndarray` at kernel startup, set `PATINA_BATTERIES=1`.
+- **Python** — `numpy`, `pandas`, and `matplotlib` install (binary wheels) into a
+  Patina-managed virtualenv at `~/.patina/pyenv` and are added to the kernel's
+  path. This avoids touching the system/Homebrew Python (externally managed,
+  PEP 668).
 
 ## Compile speed (Rust cells)
 
-Every `:dep` compiles that crate from source the first time, which is slow for large
-crates like polars or plotters. The Rust kernel auto-enables **sccache** when it's on
-your `PATH` (`brew install sccache` or `cargo install sccache`), caching compiled
-artifacts across cells, kernel restarts, and notebooks — so you pay the build cost
-once per machine. Trimming a crate's feature set helps too.
+A Rust notebook compiles real code, so a large crate like polars takes ~a minute
+the *first* time. Patina makes that a one-time cost rather than a per-run one:
+
+- **Persistent build dir** — the kernel points evcxr at a stable, exclusively
+  locked `~/.patina/evcxr/rust` so compiled dependencies survive kernel restarts.
+  evcxr otherwise builds in a throwaway temp dir; this takes polars from ~90s
+  *every* session to ~6–10s after the first compile. (Plain cargo already reuses
+  deps across builds — evcxr just needed a stable directory.)
+- **One-time warm-up** — evcxr embeds rust-analyzer for cross-cell variable
+  persistence; it indexes the sysroot once per kernel session (~30s). The kernel
+  reports "starting" until that's done, so your first cell runs fast instead of
+  stalling mid-work. Keep a kernel alive and you pay it once per session.
+- **sccache** (optional) — set `PATINA_SCCACHE=1` to also route rustc through
+  sccache if it's on `PATH`. Off by default: it disables evcxr's dynamic linking
+  (slower cell links) and overlaps with the persistent build dir above.
+
+## Desktop app
+
+Patina ships as a native desktop app via [Tauri](https://tauri.app) (`desktop/app`):
+a thin native window around the embedded server, with the server and all three
+language kernels bundled as sidecars. Notebooks live in `~/Documents/Patina`
+(seeded with examples on first run).
+
+```bash
+cd desktop/app
+cargo tauri dev                              # run it during development
+PATINA_REBUILD_BUNDLE=1 cargo tauri build    # build installers (.app/.dmg, .deb/.AppImage)
+```
+
+`cargo tauri build` runs `prebuild.sh` (the configured `beforeBuildCommand`), which:
+
+1. builds the UI and the release server + kernels, and stages them as Tauri sidecars;
+2. assembles the **offline runtime** — a relocatable Rust toolchain with the
+   batteries crates vendored (`build-rust-bundle.sh --offline`) and a relocatable
+   CPython (`build-python-bundle.sh`) — and copies it into `resources/`.
+
+On first launch the app mirrors the vendored runtime into a writable
+`~/.patina/runtime` and warm-compiles the batteries once, so notebooks run with no
+host Rust/Python and no network. The costly bundle steps are cached between builds;
+`PATINA_REBUILD_BUNDLE=1` forces a fresh bundle. (`prebuild.sh` is Unix-only today;
+Windows packaging isn't wired up yet.) The underlying mechanism is detailed below.
 
 ## Bundled toolchain (self-contained desktop app)
 
