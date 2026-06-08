@@ -46,7 +46,12 @@ export const WsProvider = (props: { children: JSX.Element }) => {
       setError("Connection lost");
     }
     if (readyState === ReadyState.OPEN) {
-      const authToken = Cookies.get("authToken");
+      // Cookie is the primary store; sessionStorage is the webview-safe fallback
+      // (see App.tsx — WKWebView drops the auth cookie across the redirect).
+      const authToken =
+        Cookies.get("authToken") ??
+        sessionStorage.getItem("authToken") ??
+        undefined;
       sendJsonMessage({
         token: authToken,
       });

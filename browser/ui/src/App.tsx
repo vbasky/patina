@@ -17,7 +17,13 @@ function App() {
     const token = searchParams.get("k");
     if (token) {
       Cookies.set("authToken", token, { path: "/", sameSite: "strict" });
+      // Cookies are unreliable in some webviews (WKWebView, used by the Tauri
+      // desktop app, drops SameSite=Strict cookies on a non-secure
+      // http://127.0.0.1 origin), so also keep the token in sessionStorage,
+      // which survives the same-tab redirect. WsProvider reads either source.
+      sessionStorage.setItem("authToken", token);
       window.location.href = window.location.origin;
+      return; // navigating away — don't mount the app on this pass
     }
     setTokenChecked(true);
   }, []);
