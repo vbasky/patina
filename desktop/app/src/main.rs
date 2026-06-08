@@ -50,7 +50,7 @@ fn main() {
 
             // Wait until the server is accepting connections, then show the window.
             wait_for_port(PORT, Duration::from_secs(30));
-            let url = format!("http://127.0.0.1:{PORT}?k={key}");
+            let url = format!("http://127.0.0.1:{PORT}/?k={key}");
             WebviewWindowBuilder::new(app, "main", WebviewUrl::External(url.parse()?))
                 .title("Patina")
                 .inner_size(1280.0, 860.0)

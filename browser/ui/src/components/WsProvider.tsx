@@ -46,11 +46,12 @@ export const WsProvider = (props: { children: JSX.Element }) => {
       setError("Connection lost");
     }
     if (readyState === ReadyState.OPEN) {
-      // Cookie is the primary store; sessionStorage is the webview-safe fallback
-      // (see App.tsx — WKWebView drops the auth cookie across the redirect).
+      // The URL ?k= param is the most robust source (no cookie/redirect needed,
+      // which the Tauri webview mishandles); fall back to the persisted copies.
       const authToken =
-        Cookies.get("authToken") ??
+        new URLSearchParams(window.location.search).get("k") ??
         sessionStorage.getItem("authToken") ??
+        Cookies.get("authToken") ??
         undefined;
       sendJsonMessage({
         token: authToken,

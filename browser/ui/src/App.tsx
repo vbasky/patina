@@ -13,17 +13,15 @@ function App() {
   const [tokenChecked, setTokenChecked] = useState<boolean>(false);
 
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const token = searchParams.get("k");
+    const token = new URLSearchParams(window.location.search).get("k");
     if (token) {
+      // Persist for later same-origin navigations. We deliberately do NOT
+      // redirect to strip the param: the Tauri desktop webview (WKWebView)
+      // doesn't reliably keep a cookie across that redirect on a non-secure
+      // http://127.0.0.1 origin, which broke auth. Keeping ?k= in the URL means
+      // WsProvider can read the token directly — no cookie/redirect dependency.
       Cookies.set("authToken", token, { path: "/", sameSite: "strict" });
-      // Cookies are unreliable in some webviews (WKWebView, used by the Tauri
-      // desktop app, drops SameSite=Strict cookies on a non-secure
-      // http://127.0.0.1 origin), so also keep the token in sessionStorage,
-      // which survives the same-tab redirect. WsProvider reads either source.
       sessionStorage.setItem("authToken", token);
-      window.location.href = window.location.origin;
-      return; // navigating away — don't mount the app on this pass
     }
     setTokenChecked(true);
   }, []);
