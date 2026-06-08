@@ -1,0 +1,42 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Patina app icon">
+  <defs>
+    <!-- copper aging into verdigris (diagonal across the tile) -->
+    <linearGradient id="tile" x1="170" y1="120" x2="880" y2="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#c47b3f"/>
+      <stop offset="0.45" stop-color="#9c6a4e"/>
+      <stop offset="0.72" stop-color="#3f9f8e"/>
+      <stop offset="1" stop-color="#2b7d68"/>
+    </linearGradient>
+    <!-- top highlight -> bottom shade for a little depth -->
+    <linearGradient id="sheen" x1="512" y1="100" x2="512" y2="924" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.30"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.20"/>
+    </linearGradient>
+  </defs>
+
+  <!-- macOS-style rounded-square tile (≈10% padding) -->
+  <g>
+    <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#tile)"/>
+    <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#sheen)"/>
+  </g>
+
+  <!-- notebook page -->
+  <g>
+    <rect x="356" y="300" width="312" height="384" rx="44" fill="#f5f1ea"/>
+    <!-- punched binding holes in the margin -->
+    <g fill="#2b7d68" fill-opacity="0.85">
+      <circle cx="416" cy="396" r="15"/>
+      <circle cx="416" cy="492" r="15"/>
+      <circle cx="416" cy="588" r="15"/>
+    </g>
+    <!-- margin rule -->
+    <line x1="452" y1="336" x2="452" y2="648" stroke="#c47b3f" stroke-opacity="0.55" stroke-width="11"/>
+    <!-- cell / text lines (top one accented, like an active cell) -->
+    <g stroke-width="34" stroke-linecap="round">
+      <line x1="486" y1="396" x2="592" y2="396" stroke="#c47b3f"/>
+      <line x1="486" y1="492" x2="600" y2="492" stroke="#2b7d68"/>
+      <line x1="486" y1="588" x2="560" y2="588" stroke="#2b7d68"/>
+    </g>
+  </g>
+</svg>
