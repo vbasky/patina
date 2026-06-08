@@ -270,6 +270,13 @@ host Rust/Python and no network. The costly bundle steps are cached between buil
 `PATINA_REBUILD_BUNDLE=1` forces a fresh bundle. (`prebuild.sh` is Unix-only today;
 Windows packaging isn't wired up yet.) The underlying mechanism is detailed below.
 
+CI (`.github/workflows/desktop.yml`) builds the installers on macOS + Linux and
+attaches them to the GitHub release on tags. macOS builds are **code-signed and
+notarized** when the Apple secrets are configured (see the workflow header for the
+list); the hardened-runtime entitlements in `desktop/app/entitlements.plist` are
+what let the signed app still compile/`dlopen` cell code and load the bundled
+`libpython`.
+
 ## Bundled toolchain (self-contained desktop app)
 
 The Rust kernel needs a Rust toolchain to compile cells. To ship a desktop app

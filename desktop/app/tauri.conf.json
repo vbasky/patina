@@ -29,7 +29,10 @@
       "resources/cargo/**/*",
       "resources/python/**/*",
       "examples/**/*"
-    ]
+    ],
+    "macOS": {
+      "entitlements": "entitlements.plist"
+    }
   },
   "plugins": {}
 }
