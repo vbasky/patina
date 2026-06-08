@@ -1,10 +1,10 @@
 import { useEffect, useReducer, useState } from "react";
 import {
-  LuMonitor,
   LuMoon,
   LuNotebook,
   LuPanelLeft,
   LuSun,
+  LuSunMoon,
 } from "react-icons/lu";
 import { buildMenus, flattenCommands } from "../core/commands";
 import { cycleTheme, getThemeMode, onThemeChange } from "../core/theme";
@@ -49,7 +49,7 @@ const ThemeToggle = () => {
 
   const icon =
     mode === "system" ? (
-      <LuMonitor size={16} />
+      <LuSunMoon size={16} />
     ) : mode === "dark" ? (
       <LuMoon size={16} />
     ) : (
