@@ -4,6 +4,8 @@ import {
   LuCircleAlert,
   LuCircleCheck,
   LuCirclePlay,
+  LuClipboard,
+  LuClipboardCheck,
   LuClock,
 } from "react-icons/lu";
 import type { EditorNode, OutputCell, OutputValue } from "../core/notebook";
@@ -52,10 +54,26 @@ export const OutputValueView: React.FC<{ value: OutputValue }> = (props: {
   } else if (value.type === "Html") {
     return <div dangerouslySetInnerHTML={{ __html: value.value }} />;
   } else if (value.type === "Exception") {
+    const errorText = `${value.value.message}\n${value.value.traceback}`;
+    const [copied, setCopied] = useState(false);
     return (
-      <pre className="m-0 overflow-x-auto whitespace-pre text-left font-mono text-xs leading-snug text-red-700 dark:text-red-400">
-        {`${value.value.message}\n${value.value.traceback}`}
-      </pre>
+      <div className="relative group">
+        <button
+          type="button"
+          title="Copy error"
+          onClick={() => {
+            navigator.clipboard.writeText(errorText);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          }}
+          className="absolute top-1 right-1 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-opacity"
+        >
+          {copied ? <LuClipboardCheck size={13} /> : <LuClipboard size={13} />}
+        </button>
+        <pre className="m-0 overflow-x-auto whitespace-pre pr-8 text-left font-mono text-xs leading-snug text-red-700 dark:text-red-400">
+          {errorText}
+        </pre>
+      </div>
     );
   }
   return null;

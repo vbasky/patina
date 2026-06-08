@@ -191,7 +191,8 @@ const EditorNamedNodeRenderer: React.FC<{
   node: EditorGroupNode;
   depth: number;
   orderedNodes: EditorNode[];
-}> = ({ notebook, run, path, node, depth, orderedNodes }) => {
+  onEdit: () => void;
+}> = ({ notebook, run, path, node, depth, orderedNodes, onEdit }) => {
   const dispatch = useDispatch();
   const sendCommand = useSendCommand();
   const pushNotification = usePushNotification();
@@ -324,6 +325,7 @@ const EditorNamedNodeRenderer: React.FC<{
                   node={child}
                   depth={depth + 1}
                   orderedNodes={orderedNodes}
+                  onEdit={onEdit}
                 />
               );
             }
@@ -335,6 +337,7 @@ const EditorNamedNodeRenderer: React.FC<{
                 path={p}
                 cell={child}
                 orderedNodes={orderedNodes}
+                onEdit={onEdit}
               />
             );
           })}
@@ -400,7 +403,8 @@ const EditorCellRenderer: React.FC<{
   path: EditorNodeId[];
   cell: EditorCell;
   orderedNodes: EditorNode[];
-}> = ({ notebook, run, path, cell, orderedNodes }) => {
+  onEdit: () => void;
+}> = ({ notebook, run, path, cell, orderedNodes, onEdit }) => {
   const dispatch = useDispatch();
   const sendCommand = useSendCommand();
   const pushNotification = usePushNotification();
@@ -628,6 +632,7 @@ const EditorCellRenderer: React.FC<{
               path,
               node_update: { code: code },
             });
+            onEdit();
           }}
           onRun={runThis}
           onAdvanceAndRun={() => {
@@ -714,10 +719,11 @@ function crawlOpen(
   }
 }
 
-const EditorPanel: React.FC<{ notebook: Notebook; run: Run | null }> = ({
-  notebook,
-  run,
-}) => {
+const EditorPanel: React.FC<{
+  notebook: Notebook;
+  run: Run | null;
+  onEdit: () => void;
+}> = ({ notebook, run, onEdit }) => {
   const dispatch = useDispatch();
   const sendCommand = useSendCommand();
   const onSave = useCallback(() => {
@@ -805,6 +811,7 @@ const EditorPanel: React.FC<{ notebook: Notebook; run: Run | null }> = ({
                 node={child}
                 depth={0}
                 orderedNodes={orderedNodes}
+                onEdit={onEdit}
               />
             );
           }
@@ -816,6 +823,7 @@ const EditorPanel: React.FC<{ notebook: Notebook; run: Run | null }> = ({
               path={p}
               cell={child}
               orderedNodes={orderedNodes}
+              onEdit={onEdit}
             />
           );
         })}

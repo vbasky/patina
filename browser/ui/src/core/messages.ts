@@ -249,6 +249,7 @@ export function processMessage(
         run_id: message.run_id,
         kernel_state: { type: "Crashed", message: message.message },
       });
+      pushNotification(`Kernel crashed: ${message.message}`, "error");
       break;
     }
     case "Output": {

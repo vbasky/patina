@@ -1,5 +1,5 @@
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   LuEraser,
   LuListTree,
@@ -7,7 +7,13 @@ import {
   LuRotateCw,
   LuSquare,
 } from "react-icons/lu";
-import { clearOutputs, closeRun, newRun, runAll, saveNotebook } from "../core/actions";
+import {
+  clearOutputs,
+  closeRun,
+  newRun,
+  runAll,
+  saveNotebook,
+} from "../core/actions";
 import type { KernelState, Notebook } from "../core/notebook";
 import EditorPanel from "./EditorPanel";
 import { usePushNotification } from "./NotificationProvider";
@@ -18,17 +24,18 @@ import { useSendCommand } from "./WsProvider";
 function kernelBadge(state: KernelState | null): {
   color: string;
   label: string;
+  message?: string;
 } {
   if (!state) return { color: "bg-gray-300", label: "No kernel" };
   switch (state.type) {
     case "Ready":
       return { color: "bg-green-500", label: "Ready" };
     case "Running":
-      return { color: "bg-amber-500", label: "Running…" };
+      return { color: "bg-amber-500", label: "Running\u2026" };
     case "Init":
-      return { color: "bg-blue-500", label: "Starting…" };
+      return { color: "bg-blue-500", label: "Starting\u2026" };
     case "Crashed":
-      return { color: "bg-red-500", label: "Crashed" };
+      return { color: "bg-red-500", label: "Crashed", message: state.message };
     case "Closed":
       return { color: "bg-gray-400", label: "Stopped" };
     default:
@@ -60,18 +67,20 @@ const NotebookView: React.FC<{ notebook: Notebook }> = ({ notebook }) => {
     }
   }, [notebook, dispatch, sendCommand]);
 
-  // Auto-save: debounced save 2s after last editor change.
+  // Auto-save: triggered explicitly on editor changes, debounced 2s.
+  // Uses a callback passed to EditorPanel, avoiding false triggers
+  // from state changes (output arriving, kernel events, etc.).
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => {
-    if (notebook.save_in_progress) return;
+  const notebookRef = useRef(notebook);
+  notebookRef.current = notebook;
+
+  const scheduleSave = useCallback(() => {
+    if (notebookRef.current.save_in_progress) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      saveNotebook(notebook, dispatch, sendCommand);
+      saveNotebook(notebookRef.current, dispatch, sendCommand);
     }, 2000);
-    return () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-    };
-  }, [notebook.editor_root, notebook.save_in_progress]);
+  }, [dispatch, sendCommand]);
 
   const toolBtn =
     "inline-flex items-center gap-1 rounded px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-40 dark:text-gray-300 dark:hover:bg-[#2d2d2d]";
@@ -83,7 +92,10 @@ const NotebookView: React.FC<{ notebook: Notebook }> = ({ notebook }) => {
         <span className="font-mono text-sm font-semibold text-teal-700 dark:text-teal-400">
           {notebook.path?.split("/").pop() || "notebook"}
         </span>
-        <span className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300">
+        <span
+          className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300"
+          title={badge.message}
+        >
           <span
             className={`inline-block h-2.5 w-2.5 rounded-full ${badge.color}`}
           />
@@ -145,7 +157,11 @@ const NotebookView: React.FC<{ notebook: Notebook }> = ({ notebook }) => {
       {/* Body: single-column notebook + optional globals drawer */}
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 overflow-auto">
-          <EditorPanel notebook={notebook} run={run} />
+          <EditorPanel
+            notebook={notebook}
+            run={run}
+            onEdit={scheduleSave}
+          />
         </div>
         {showGlobals && (
           <div className="w-80 shrink-0 overflow-auto border-l border-gray-200 bg-white p-2 dark:border-[#3a3a3a] dark:bg-[#252526]">

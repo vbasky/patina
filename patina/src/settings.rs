@@ -69,8 +69,28 @@ impl Settings {
                 }
             }
             Language::Python => {
-                if let Some(p) = trimmed(&self.python) {
-                    // So a relocated/bundled libpython is the one loaded.
+                // On macOS the kernel binary links libpython via @rpath. Set
+                // the library path so the dynamic linker can find it (needed
+                // even without explicit config). Also set PATINA_PYTHON to
+                // point at the same Python install, so the embedded interpreter
+                // finds its stdlib and site-packages correctly.
+                let python_root = trimmed(&self.python).or_else(|| {
+                    let output = std::process::Command::new("python3")
+                        .args(["-c", "import sys; print(sys.prefix)"])
+                        .output()
+                        .ok()?;
+                    if output.status.success() {
+                        let prefix = String::from_utf8_lossy(&output.stdout)
+                            .trim()
+                            .to_string();
+                        if !prefix.is_empty() {
+                            return Some(prefix);
+                        }
+                    }
+                    None
+                });
+
+                if let Some(p) = python_root {
                     let lib = format!("{p}/lib");
                     let var = if cfg!(target_os = "macos") {
                         "DYLD_LIBRARY_PATH"

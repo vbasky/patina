@@ -134,10 +134,16 @@ def _patina_ensure(pkgs):
 "#;
 
 fn batteries_enabled() -> bool {
-    !matches!(
+    if matches!(
         std::env::var("PATINA_BATTERIES").as_deref(),
         Ok("0") | Ok("off") | Ok("false")
-    )
+    ) {
+        return false;
+    }
+    // When PATINA_PYTHON is set, the kernel uses a system/bundled Python that
+    // should already have its own packages. Skip the venv to avoid conflicting
+    // with incompatible pip wheels.
+    std::env::var("PATINA_PYTHON").is_err()
 }
 
 fn ensure_packages() {

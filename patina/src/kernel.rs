@@ -201,23 +201,48 @@ pub fn spawn_kernel(
     let child = cmd.spawn()?;
     let pid = child.id().unwrap_or(0);
     let (sender, receiver) = oneshot::channel();
-    let state_ref = state_ref.clone();
+    let state_ref_clone = state_ref.clone();
+    let stdout_path_clone = stdout_path.clone();
+    let stderr_path_clone = stderr_path.clone();
     spawn(async move {
         tokio::select! {
-            _ = kernel_guard(child) => {
-                let mut state = state_ref.lock().unwrap();
+            result = kernel_guard(child) => {
+                // Read stderr before acquiring the state lock (IO across lock is forbidden).
+                let stderr_tail = tokio::fs::read_to_string(&stderr_path_clone)
+                    .await
+                    .unwrap_or_default();
+                let _ = tokio::fs::remove_file(stdout_path_clone).await;
+                let _ = tokio::fs::remove_file(stderr_path_clone).await;
+
+                let mut state = state_ref_clone.lock().unwrap();
                 if let Ok(kernel) = state.find_kernel_by_id_mut(kernel_ctx.kernel_id) {
                     // TODO: Remove kernel from state
                     let notebook_id = kernel.notebook_id();
                     let run_id = kernel.run_id();
                     let notebook = state.find_notebook_by_id_mut(notebook_id).unwrap();
                     let run = notebook.find_run_by_id_mut(run_id).unwrap();
-                    run.set_crashed_kernel("Process unexpectedly closed".to_string());
+                    let msg = match &result {
+                        Ok(()) => "Process closed unexpectedly".to_string(),
+                        Err(e) => {
+                            let stderr_snippet = if stderr_tail.len() > 500 {
+                                format!("{}...", &stderr_tail[..500])
+                            } else {
+                                stderr_tail
+                            };
+                            if stderr_snippet.is_empty() {
+                                format!("Kernel crashed: {e}")
+                            } else {
+                                format!("Kernel crashed: {e}\n\nStderr:\n{stderr_snippet}")
+                            }
+                        }
+                    };
+                    tracing::error!("Kernel {} crashed: {msg}", kernel_ctx.kernel_id);
+                    run.set_crashed_kernel(msg.clone());
                     notebook.send_message(ToClientMessage::KernelCrashed {
                         notebook_id,
                         run_id,
-                        message: "Process unexpectedly closed".to_string(),
-                    })
+                        message: msg,
+                    });
                 }
             }
             _ = receiver => {}

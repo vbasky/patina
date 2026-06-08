@@ -2,6 +2,7 @@ import Editor from "@monaco-editor/react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { monacoLang, monacoTheme } from "../core/monaco-setup";
+import { onThemeChange } from "../core/theme";
 
 interface MonacoCellProps {
   value: string;
@@ -52,7 +53,6 @@ const MonacoCell: React.FC<MonacoCellProps> = ({
   onMoveDown,
 }) => {
   const [theme, setTheme] = useState(monacoTheme());
-  const containerRef = useRef<HTMLDivElement>(null);
   const onFocusRef = useRef(onFocus);
   const onBlurRef = useRef(onBlur);
   const onRunRef = useRef(onRun);
@@ -61,7 +61,6 @@ const MonacoCell: React.FC<MonacoCellProps> = ({
   const onMoveUpRef = useRef(onMoveUp);
   const onMoveDownRef = useRef(onMoveDown);
 
-  // Keep refs in sync
   onFocusRef.current = onFocus;
   onBlurRef.current = onBlur;
   onRunRef.current = onRun;
@@ -70,19 +69,9 @@ const MonacoCell: React.FC<MonacoCellProps> = ({
   onMoveUpRef.current = onMoveUp;
   onMoveDownRef.current = onMoveDown;
 
+  // Subscribe to theme changes via the existing system (no polling).
   useEffect(() => {
-    const update = () => setTheme(monacoTheme());
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-
-  useEffect(() => {
-    const tid = setInterval(() => {
-      const t = monacoTheme();
-      setTheme((prev) => (prev !== t ? t : prev));
-    }, 300);
-    return () => clearInterval(tid);
+    return onThemeChange(() => setTheme(monacoTheme()));
   }, []);
 
   const handleMount = useCallback(
@@ -91,13 +80,13 @@ const MonacoCell: React.FC<MonacoCellProps> = ({
       monaco: typeof import("monaco-editor"),
     ) => {
       editor.addAction({
-        id: "patina-run-cell",
+        id: `patina-run-cell-${id}`,
         label: "Run Cell",
         keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
         run: () => onRunRef.current(),
       });
       editor.addAction({
-        id: "patina-run-advance",
+        id: `patina-run-advance-${id}`,
         label: "Run and Advance",
         keybindings: [
           monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Enter,
@@ -105,7 +94,7 @@ const MonacoCell: React.FC<MonacoCellProps> = ({
         run: () => onAdvanceRef.current(),
       });
       editor.addAction({
-        id: "patina-escape",
+        id: `patina-escape-${id}`,
         label: "Deselect Cell",
         keybindings: [monaco.KeyCode.Escape],
         run: () => onEscapeRef.current(),
@@ -129,21 +118,19 @@ const MonacoCell: React.FC<MonacoCellProps> = ({
 
       editor.onDidFocusEditorText(() => onFocusRef.current());
       editor.onDidBlurEditorText(() => onBlurRef.current());
-
-      // Suppress Monaco's own context menu suggestions
-      editor.updateOptions({ contextmenu: false });
-
-      setTimeout(() => editor.focus(), 0);
     },
-    [],
+    [id],
   );
 
   const langId = monacoLang(language);
 
+  const lineCount = Math.max(1, value.split("\n").length);
+  const minHeight = Math.max(36, lineCount * 20 + 24);
+
   return (
-    <div id={id} ref={containerRef} className="patina-monaco-cell">
+    <div id={id} className="patina-monaco-cell">
       <Editor
-        height="auto"
+        height={`${minHeight}px`}
         language={langId}
         value={value}
         theme={theme}
@@ -162,8 +149,8 @@ const MonacoCell: React.FC<MonacoCellProps> = ({
           renderLineHighlight: "all",
           scrollBeyondLastLine: false,
           scrollbar: {
-            vertical: "hidden",
-            horizontal: "hidden",
+            vertical: "auto",
+            horizontal: "auto",
             alwaysConsumeMouseWheel: false,
           },
           overviewRulerLanes: 0,
@@ -171,7 +158,6 @@ const MonacoCell: React.FC<MonacoCellProps> = ({
           overviewRulerBorder: false,
           wordWrap: "on",
           automaticLayout: true,
-          fixedOverflowWidgets: true,
           fontSize: 12.5,
           fontFamily:
             '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace',
@@ -186,6 +172,7 @@ const MonacoCell: React.FC<MonacoCellProps> = ({
           autoClosingBrackets: "always",
           autoClosingQuotes: "always",
           copyWithSyntaxHighlighting: true,
+          contextmenu: false,
           rulers: [],
         }}
       />
