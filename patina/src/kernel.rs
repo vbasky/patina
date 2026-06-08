@@ -142,7 +142,8 @@ fn kernel_bin_name(language: Language) -> &'static str {
     match language {
         Language::Rust => "patina-kernel",
         Language::Python => "patina-kernel-python",
-        Language::JavaScript => "patina-kernel-js",
+        // TypeScript kernel; binary name kept as -js (it embeds the JS engine).
+        Language::TypeScript => "patina-kernel-js",
     }
 }
 

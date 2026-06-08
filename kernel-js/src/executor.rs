@@ -77,7 +77,20 @@ fn run_compute(
         if leaf.code.trim().is_empty() {
             continue;
         }
-        match ctx.eval(Source::from_bytes(leaf.code.as_str())) {
+        // Strip TypeScript to JavaScript (oxc) before boa evaluates it.
+        let js = match crate::transpile::ts_to_js(&leaf.code) {
+            Ok(js) => js,
+            Err(message) => {
+                error = Some(KernelOutputValue::Exception {
+                    value: Exception {
+                        traceback: message.clone(),
+                        message,
+                    },
+                });
+                break;
+            }
+        };
+        match ctx.eval(Source::from_bytes(js.as_str())) {
             Ok(v) => {
                 value = if v.is_undefined() || v.is_null() {
                     KernelOutputValue::None

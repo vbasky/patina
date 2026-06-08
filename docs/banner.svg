@@ -1,4 +1,4 @@
-<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Patina — a notebook for Rust, Python and JavaScript, built in pure Rust">
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Patina — a notebook for Rust, Python and TypeScript, built in pure Rust">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#f3f4fb"/>
@@ -95,12 +95,12 @@
     <rect x="455" y="372" width="290" height="8" rx="4" fill="#f97316"/>
 
     <!-- tagline -->
-    <text x="600" y="448" font-size="33" font-weight="500" fill="#565d6d">A notebook for Rust, Python &amp; JavaScript — built in pure Rust</text>
+    <text x="600" y="448" font-size="33" font-weight="500" fill="#565d6d">A notebook for Rust, Python &amp; TypeScript — built in pure Rust</text>
 
     <!-- keyword row -->
-    <text x="600" y="512" font-size="22" font-weight="600" fill="#98a0b0" letter-spacing="3">RUST · PYTHON · JAVASCRIPT · :DEP · RICH OUTPUT</text>
+    <text x="600" y="512" font-size="22" font-weight="600" fill="#98a0b0" letter-spacing="3">RUST · PYTHON · TYPESCRIPT · :DEP · RICH OUTPUT</text>
 
     <!-- footer -->
-    <text x="600" y="580" font-size="20" font-weight="400" fill="#aab0bd" letter-spacing="1">github.com/vbasky/patina · evcxr · pyo3 · boa · MIT / Apache-2.0</text>
+    <text x="600" y="580" font-size="20" font-weight="400" fill="#aab0bd" letter-spacing="1">github.com/vbasky/patina · evcxr · pyo3 · oxc · boa · MIT / Apache-2.0</text>
   </g>
 </svg>

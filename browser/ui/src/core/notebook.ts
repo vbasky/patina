@@ -85,7 +85,7 @@ export interface Run {
   open_objects: Set<string>;
 }
 
-export type Language = "Rust" | "Python" | "JavaScript";
+export type Language = "Rust" | "Python" | "TypeScript";
 
 export interface Notebook {
   id: NotebookId;

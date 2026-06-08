@@ -9,9 +9,8 @@ import {
   type OutputCell,
   type Run,
 } from "../core/notebook";
-import { nonNull } from "../core/util";
 
-const LANGUAGES: Language[] = ["Rust", "Python", "JavaScript"];
+const LANGUAGES: Language[] = ["Rust", "Python", "TypeScript"];
 
 import { marked } from "marked";
 import type React from "react";
@@ -33,7 +32,6 @@ import {
 } from "react-icons/lu";
 import { TbCircleDashed } from "react-icons/tb";
 
-import Editor from "react-simple-code-editor";
 import { v4 as uuidv4 } from "uuid";
 import {
   newEditorCode,
@@ -52,6 +50,7 @@ import { focusId } from "../core/focus";
 import { highlightInline } from "../core/highlighter";
 import { NodeToolbar } from "./EditorToolbar";
 import { LanguageIcon } from "./LanguageIcon";
+import MonacoCell from "./MonacoCell";
 import { usePushNotification } from "./NotificationProvider";
 import { OutputValueView } from "./OutputCell";
 import { useDispatch } from "./StateProvider";
@@ -195,11 +194,11 @@ const EditorNamedNodeRenderer: React.FC<{
         onKeyDown={(e) => {
           if (e.key === "ArrowUp") {
             e.preventDefault();
-            move(node, orderedNodes, true);
+            moveToNode(node, orderedNodes, true);
           }
           if (e.key === "ArrowDown") {
             e.preventDefault();
-            move(node, orderedNodes, false);
+            moveToNode(node, orderedNodes, false);
           }
           if (
             (e.key === "ArrowLeft" && isOpen) ||
@@ -315,27 +314,11 @@ const EditorNamedNodeRenderer: React.FC<{
   );
 };
 
-function checkIfLastLine(
-  event:
-    | React.KeyboardEvent<HTMLDivElement>
-    | React.KeyboardEvent<HTMLTextAreaElement>,
+function moveToNode(
+  node: EditorNode,
+  orderedNodes: EditorNode[],
+  is_up: boolean,
 ) {
-  const textarea = event.target as HTMLTextAreaElement;
-  const cursorPosition = textarea.selectionStart;
-  return !textarea.value.substring(cursorPosition).includes("\n");
-}
-
-function checkIfFirstLine(
-  event:
-    | React.KeyboardEvent<HTMLDivElement>
-    | React.KeyboardEvent<HTMLTextAreaElement>,
-) {
-  const textarea = event.target as HTMLTextAreaElement;
-  const cursorPosition = textarea.selectionStart;
-  return !textarea.value.substring(0, cursorPosition).includes("\n");
-}
-
-function move(node: EditorNode, orderedNodes: EditorNode[], is_up: boolean) {
   let idx = orderedNodes.indexOf(node);
   if (is_up) {
     if (idx <= 0) return;
@@ -345,7 +328,8 @@ function move(node: EditorNode, orderedNodes: EditorNode[], is_up: boolean) {
     idx += 1;
   }
   const newId = orderedNodes[idx].id;
-  const element = nonNull(document.getElementById(newId));
+  const element = document.getElementById(newId);
+  if (!element) return;
   const textArea = element.getElementsByTagName("textarea")[0];
   if (textArea) {
     textArea.focus();
@@ -403,7 +387,7 @@ const EditorCellRenderer: React.FC<{
   const advanceOrCreate = () => {
     const idx = orderedNodes.indexOf(cell);
     if (idx >= 0 && idx < orderedNodes.length - 1) {
-      move(cell, orderedNodes, false);
+      moveToNode(cell, orderedNodes, false);
     } else {
       insertAfter(false);
     }
@@ -411,7 +395,6 @@ const EditorCellRenderer: React.FC<{
 
   const runThis = () => {
     if (isMd) {
-      // "Run" a markdown cell = render it (just deselect).
       dispatch({
         type: "select_editor_node",
         notebook_id: notebook.id,
@@ -424,6 +407,15 @@ const EditorCellRenderer: React.FC<{
   };
 
   const deleteThis = () => removeEditorNode(notebook, path, dispatch);
+
+  const deselectThis = () => {
+    dispatch({
+      type: "select_editor_node",
+      notebook_id: notebook.id,
+      editor_node_id: null,
+    });
+    (document.activeElement as HTMLElement | null)?.blur();
+  };
 
   const toggleType = () =>
     dispatch({
@@ -474,7 +466,23 @@ const EditorCellRenderer: React.FC<{
       <div
         className={`mb-1 overflow-hidden rounded-md border bg-white dark:bg-[#252526] ${isMd ? "border-amber-300 dark:border-amber-500/50" : "border-gray-300 dark:border-[#3a3a3a]"}`}
       >
-        <Editor
+        <MonacoCell
+          id={cell.id}
+          value={cell.code}
+          language={notebook.language}
+          onChange={(code) => {
+            dispatch({
+              type: "update_editor_node",
+              notebook_id: notebook.id,
+              path,
+              node_update: { code: code },
+            });
+          }}
+          onRun={runThis}
+          onAdvanceAndRun={() => {
+            runThis();
+            advanceOrCreate();
+          }}
           onFocus={() =>
             dispatch({
               type: "select_editor_node",
@@ -483,38 +491,10 @@ const EditorCellRenderer: React.FC<{
             })
           }
           onBlur={() => {}}
-          id={cell.id}
-          value={cell.code}
-          onValueChange={(code) => {
-            dispatch({
-              type: "update_editor_node",
-              notebook_id: notebook.id,
-              path,
-              node_update: { code: code },
-            });
-          }}
-          highlight={(code) => highlightInline(code)}
-          padding={10}
-          style={{
-            fontFamily: '"JetBrains Mono", ui-monospace, monospace',
-            fontSize: 12.5,
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.ctrlKey || e.shiftKey)) {
-              e.preventDefault();
-              runThis();
-              if (e.shiftKey) advanceOrCreate();
-              return;
-            }
-            if (e.key === "ArrowUp" && checkIfFirstLine(e)) {
-              e.preventDefault();
-              move(cell, orderedNodes, true);
-            }
-            if (e.key === "ArrowDown" && checkIfLastLine(e)) {
-              e.preventDefault();
-              move(cell, orderedNodes, false);
-            }
-          }}
+          onEscape={deselectThis}
+          onMoveUp={() => moveToNode(cell, orderedNodes, true)}
+          onMoveDown={() => moveToNode(cell, orderedNodes, false)}
+          onDelete={deleteThis}
         />
         <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-2 py-1 text-xs dark:border-[#3a3a3a] dark:bg-[#2d2d2d]">
           <div className="flex items-center gap-2">

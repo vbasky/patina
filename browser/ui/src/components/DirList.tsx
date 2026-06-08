@@ -20,7 +20,7 @@ import { SettingsModal } from "./SettingsModal";
 import { useDispatch, useGlobalState } from "./StateProvider";
 import { useSendCommand } from "./WsProvider";
 
-const LANGUAGES: Language[] = ["Rust", "Python", "JavaScript"];
+const LANGUAGES: Language[] = ["Rust", "Python", "TypeScript"];
 
 const basename = (p: string) => p.split("/").pop() ?? p;
 const parentOf = (p: string) => p.split("/").slice(0, -1).join("/");

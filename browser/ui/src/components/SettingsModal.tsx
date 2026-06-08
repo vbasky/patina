@@ -89,7 +89,7 @@ export const SettingsModal: React.FC<{ onClose: () => void }> = ({
           />
           <Field
             label="Node"
-            hint="Node install root. Reserved — the JavaScript kernel uses boa."
+            hint="Node install root. Reserved — the TypeScript kernel transpiles with oxc and runs on boa."
             placeholder="auto-detect (host)"
             value={node}
             onChange={setNode}

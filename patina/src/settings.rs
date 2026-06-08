@@ -85,7 +85,7 @@ impl Settings {
                     env.push(("PATINA_PYTHON".to_string(), p));
                 }
             }
-            Language::JavaScript => {
+            Language::TypeScript => {
                 if let Some(p) = trimmed(&self.node) {
                     env.push(("PATINA_NODE".to_string(), p));
                 }

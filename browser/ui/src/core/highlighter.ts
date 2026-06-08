@@ -3,16 +3,31 @@
 // engine and statically-imported grammar/themes.
 import { createHighlighterCoreSync, type HighlighterCore } from "shiki/core";
 import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
+import python from "shiki/langs/python.mjs";
 import rust from "shiki/langs/rust.mjs";
+import typescript from "shiki/langs/typescript.mjs";
 import githubDark from "shiki/themes/github-dark.mjs";
 import githubLight from "shiki/themes/github-light.mjs";
+import type { Language } from "./notebook";
 import { isDark } from "./theme";
 
 const hl: HighlighterCore = createHighlighterCoreSync({
-  langs: [rust],
+  langs: [rust, python, typescript],
   themes: [githubLight, githubDark],
   engine: createJavaScriptRegexEngine(),
 });
+
+/** The shiki grammar id for a notebook language. */
+export function langFor(language: Language): string {
+  switch (language) {
+    case "Python":
+      return "python";
+    case "TypeScript":
+      return "typescript";
+    default:
+      return "rust";
+  }
+}
 
 const loadedLangs = new Set(hl.getLoadedLanguages());
 

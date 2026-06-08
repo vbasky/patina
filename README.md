@@ -1,20 +1,20 @@
 # Patina
 
-![patina — a Rust-native interactive notebook for Rust, Python and JavaScript](https://raw.githubusercontent.com/vbasky/patina/main/docs/banner.png)
+![patina — a Rust-native interactive notebook for Rust, Python and TypeScript](https://raw.githubusercontent.com/vbasky/patina/main/docs/banner.png)
 
 **Name:** *patina* is the sheen that forms on metal as it weathers and oxidizes — i.e.
 *rust*. A nod to **Rust**, the language the whole stack (server, kernels, even the
-JavaScript engine) is built in.
+JavaScript engine and the TypeScript transpiler) is built in.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/vbasky/patina/build.yml?branch=main&logo=github&label=CI)](https://github.com/vbasky/patina/actions)
 [![License](https://img.shields.io/github/license/vbasky/patina)](LICENSE-MIT)
-[![kernels](https://img.shields.io/badge/kernels-Rust%20·%20Python%20·%20JavaScript-c47b3f?logo=rust)](#languages)
+[![kernels](https://img.shields.io/badge/kernels-Rust%20·%20Python%20·%20TypeScript-c47b3f?logo=rust)](#languages)
 [![UI](https://img.shields.io/badge/UI-React-61dafb?logo=react)](browser/ui)
 
 **Patina is a Rust-native interactive notebook.** Cells run in **Rust**, **Python**,
-or **JavaScript** — and the stack around them (web server, kernels, wire protocol,
-and even the JavaScript engine) is written entirely in Rust. No Jupyter, no separate
-kernel-protocol plumbing.
+or **TypeScript** — and the stack around them (web server, kernels, wire protocol,
+the JavaScript engine, and the TypeScript transpiler) is written entirely in Rust.
+No Jupyter, no separate kernel-protocol plumbing.
 
 Code and outputs stay separate, run history is preserved instead of clobbered, and
 live variables are inspectable.
@@ -30,12 +30,13 @@ matching kernel binary.
 | ------------ | ----------------------- | ----------------------------- | ---------------------- |
 | Rust         | `patina-kernel`         | `evcxr` (compiled per cell)   | full                   |
 | Python       | `patina-kernel-python`  | embedded CPython (`pyo3`)     | full                   |
-| JavaScript   | `patina-kernel-js`      | `boa` (pure Rust, no V8)      | `var` / globals only   |
+| TypeScript   | `patina-kernel-js`      | `oxc` (type strip) + `boa`    | `var` / globals only   |
 
 - **Rust** — pull crates inside a cell with `:dep foo = "1"`.
 - **Python** — embeds CPython via pyo3; `import` resolves against that Python's packages.
-- **JavaScript** — top-level `let`/`const` don't persist across cells (a boa/REPL limit);
-  `var` and global assignments do.
+- **TypeScript** — each cell is type-stripped to JavaScript with `oxc` (pure Rust, no
+  `tsc`/Node) and run on the `boa` engine; types aren't checked. Top-level `let`/`const`
+  don't persist across cells (a boa/REPL limit); `var` and global assignments do.
 
 ## How it works
 
@@ -160,17 +161,21 @@ patina_svg(&svg);              // → Html (inline SVG)
 `let` bindings across cells — use a concrete type annotation and avoid a trailing `?`
 (which causes type inference to fail): `let df: DataFrame = df!(...).unwrap();`
 
-### JavaScript
+### TypeScript
 
-The `boa` engine (pure Rust) captures `console.*` output and renders the final
-expression value as text:
+Each cell is type-stripped to JavaScript with `oxc` (pure Rust — no `tsc`, no Node)
+and run on the `boa` engine, which captures `console.*` output and renders the final
+expression value as text. Types are erased, not checked:
 
-```javascript
-console.log("hello");
-[1, 2, 3]                       // → Text: "[ 1, 2, 3 ]"
+```typescript
+interface Point { x: number; y: number }
+const p: Point = { x: 1, y: 2 };
+console.log(`sum = ${p.x + p.y}`);   // → sum = 3
+const nums: number[] = [1, 2, 3];
+nums.map((n) => n * 2)               // → Text: "[ 2, 4, 6 ]"
 ```
 
-Rich output (HTML/PNG/SVG) is not yet supported in JS.
+Rich output (HTML/PNG/SVG) is not yet supported in the TypeScript kernel.
 
 ## Workspace & files
 
@@ -311,8 +316,8 @@ PATINA_PYTHON=desktop/bundle/python ./target/debug/patina
 The kernel sets `PYTHONHOME` to `$PATINA_PYTHON` (else a `python/` dir beside the
 kernel binary). For *full* independence rebuild the kernel against that interpreter
 (`PYO3_PYTHON=…/python/bin/python3 cargo build -p patina-kernel-python`) so it links
-the bundled `libpython`. The **JavaScript** (boa) kernel already needs nothing from
-the host.
+the bundled `libpython`. The **TypeScript** kernel (oxc + boa) already needs nothing
+from the host.
 
 ## Status
 

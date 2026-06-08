@@ -10,7 +10,10 @@ pub enum Language {
     #[default]
     Rust,
     Python,
-    JavaScript,
+    // Cells are TypeScript, type-stripped to JS and run on boa. `JavaScript` is
+    // accepted as an alias for notebooks written before the switch.
+    #[serde(alias = "JavaScript")]
+    TypeScript,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -1,11 +1,13 @@
-//! Patina JavaScript kernel.
+//! Patina TypeScript kernel.
 //!
-//! Speaks the shared `comm` kernel protocol and evaluates **JavaScript** cells
-//! with [`boa_engine`] — a pure-Rust JS engine (no V8), so it builds with cargo
-//! alone. State persists across cells through one shared `Context`. The
-//! networking half is shared (`comm::kernel`); only the executor is JS-specific.
+//! Speaks the shared `comm` kernel protocol and evaluates **TypeScript** cells:
+//! each cell is type-stripped to JavaScript with [`oxc`] (pure Rust) and run with
+//! [`boa_engine`] — a pure-Rust JS engine (no V8) — so it builds with cargo alone
+//! and needs no Node/V8. State persists across cells through one shared `Context`.
+//! The networking half is shared (`comm::kernel`); only the executor is specific.
 
 mod executor;
+mod transpile;
 
 use comm::kernel::run_kernel;
 use executor::spawn_executor;

@@ -73,7 +73,7 @@ pub(crate) fn ipynb_language(json: &str) -> Language {
         .to_ascii_lowercase();
     match name.as_str() {
         "python" => Language::Python,
-        "javascript" | "js" | "typescript" | "node" => Language::JavaScript,
+        "typescript" | "ts" | "javascript" | "js" | "node" => Language::TypeScript,
         _ => Language::Rust,
     }
 }
