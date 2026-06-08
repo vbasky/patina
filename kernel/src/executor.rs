@@ -49,9 +49,22 @@ pub fn spawn_executor(
         };
 
         // Debug builds compile fastest — every cell goes through rustc, so keep
-        // the opt level low. (evcxr's on-disk artifact cache lives on the
-        // lower-level CommandContext; wiring it up is a deeper change.)
+        // the opt level low.
         let _ = context.set_opt_level("0");
+
+        // Persist compiled artifacts across kernel restarts. evcxr otherwise
+        // builds in a throwaway temp dir, so every session recompiled the
+        // batteries crates (polars ~90s, each time). This content-addressed
+        // cache lives in the user's cache dir, so the heavy crates compile once
+        // per machine and are reused forever after. Unlike sccache it preserves
+        // dynamic linking (fast cell links). Cap in MiB; PATINA_CACHE_MIB to tune.
+        let cache_mib = std::env::var("PATINA_CACHE_MIB")
+            .ok()
+            .and_then(|v| v.parse::<u64>().ok())
+            .unwrap_or(4096);
+        if cache_mib > 0 {
+            let _ = context.execute(&format!(":cache {cache_mib}"));
+        }
 
         // Rich-output helpers available in every cell (rendered via evcxr's
         // content protocol). Use them with the Rust equivalents of

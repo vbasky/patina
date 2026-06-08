@@ -126,8 +126,13 @@ fn configure_bundled_toolchain() -> bool {
 }
 
 /// If `sccache` is on PATH and no rustc wrapper is configured, route compiles
-/// through it. Caches compiled artifacts, cutting evcxr's per-cell latency.
+/// through it. Off by default: evcxr's own `:cache` (see `executor.rs`) caches
+/// artifacts across sessions *and* preserves dynamic linking, which sccache
+/// disables — making cell links much slower. Opt in with `PATINA_SCCACHE=1`.
 fn enable_sccache_if_available() {
+    if std::env::var_os("PATINA_SCCACHE").is_none() {
+        return;
+    }
     if std::env::var_os("RUSTC_WRAPPER").is_some() {
         return;
     }
