@@ -93,6 +93,7 @@ export interface Notebook {
   language: Language;
   editor_root: EditorGroupNode;
   editor_open_nodes: Set<string>;
+  collapsed_cells: Set<EditorNodeId>;
   runs: Run[];
   waiting_for_fresh: EditorCell[];
   current_run_id: RunId | null;

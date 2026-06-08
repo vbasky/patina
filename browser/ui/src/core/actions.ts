@@ -1,7 +1,7 @@
 import type { Dispatch } from "react";
 import { v4 as uuidv4 } from "uuid";
 import type { PushNotification } from "../components/NotificationProvider";
-import { isMarkdownCell } from "./cells";
+import { isMarkdownCell, applyMagics } from "./cells";
 import { focusId } from "./focus";
 import type { SendCommand } from "./messages";
 import {
@@ -43,12 +43,13 @@ export function newRun(
 export function extractRunNode(
   node: EditorNode,
   path: EditorNodeId[],
+  language: string,
 ): EditorNode {
   if (path.length === 0) {
-    return node;
+    return applyNodeMagics(node, language);
   }
   if (node.type === "Cell") {
-    return node;
+    return applyNodeMagics(node, language);
   }
   const child = nonNull(node.children.find((c) => c.id === path[0]));
   return {
@@ -56,7 +57,17 @@ export function extractRunNode(
     id: node.id,
     type: "Group",
     scope: node.scope,
-    children: [extractRunNode(child, path.slice(1))],
+    children: [extractRunNode(child, path.slice(1), language)],
+  };
+}
+
+function applyNodeMagics(node: EditorNode, language: string): EditorNode {
+  if (node.type === "Cell") {
+    return { ...node, code: applyMagics(node.code, language) };
+  }
+  return {
+    ...node,
+    children: node.children.map((c) => applyNodeMagics(c, language)),
   };
 }
 
@@ -67,7 +78,7 @@ export function runCode(
   send_command: SendCommand,
   pushNotification: PushNotification,
 ) {
-  const node = extractRunNode(notebook.editor_root, path);
+  const node = extractRunNode(notebook.editor_root, path, notebook.language);
   const calledId = path[path.length - 1];
   let run_id = notebook.current_run_id;
   let flag: OutputCellFlag = "Pending";
@@ -350,6 +361,20 @@ export function deleteCell(
   const path = findPathById(notebook.editor_root, id);
   if (!path) return;
   dispatch({ type: "remove_editor_node", notebook_id: notebook.id, path });
+}
+
+export function duplicateCell(
+  notebook: Notebook,
+  id: EditorNodeId,
+  dispatch: Dispatch<StateAction>,
+) {
+  const path = findPathById(notebook.editor_root, id);
+  if (!path) return;
+  dispatch({
+    type: "duplicate_editor_node",
+    notebook_id: notebook.id,
+    path,
+  });
 }
 
 export function copyCell(notebook: Notebook, id: EditorNodeId) {

@@ -6,6 +6,7 @@ import {
   LuFolder,
   LuHouse,
   LuNotebook,
+  LuPencil,
   LuPlus,
   LuSettings,
   LuTrash2,
@@ -73,6 +74,30 @@ const NotebookList = () => {
       sendCommand({ type: "DeleteFile", path: confirmDelete.path });
       setConfirmDelete(null);
     }
+  };
+
+  // Rename a file/folder via the name dialog, keeping it in the same folder.
+  const renameEntry = (entry: DirEntry) => {
+    const oldName = basename(entry.path);
+    const parent = parentOf(entry.path);
+    dispatch({
+      type: "set_dialog",
+      dialog: {
+        title: "Rename",
+        value: oldName,
+        okText: "Rename",
+        onCancel: () => {},
+        onConfirm: (value: string) => {
+          const next = value.trim();
+          if (!next || next === oldName) return;
+          sendCommand({
+            type: "RenameFile",
+            path: entry.path,
+            new_path: parent ? `${parent}/${next}` : next,
+          });
+        },
+      },
+    });
   };
 
   // Hide dotfiles by their basename (entry paths are full, root-relative).
@@ -256,6 +281,17 @@ const NotebookList = () => {
             >
               {iconFor(entry)}
               <span className="flex-1 truncate">{basename(entry.path)}</span>
+              <button
+                type="button"
+                title="Rename"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  renameEntry(entry);
+                }}
+                className="shrink-0 rounded p-0.5 text-gray-400 opacity-0 transition hover:bg-gray-200 hover:text-gray-700 group-hover:opacity-100 dark:hover:bg-[#3a3a3a] dark:hover:text-gray-200"
+              >
+                <LuPencil size={13} />
+              </button>
               <button
                 type="button"
                 title="Delete"

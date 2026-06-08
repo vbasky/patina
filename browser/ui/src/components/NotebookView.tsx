@@ -7,7 +7,7 @@ import {
   LuRotateCw,
   LuSquare,
 } from "react-icons/lu";
-import { clearOutputs, closeRun, newRun, runAll } from "../core/actions";
+import { clearOutputs, closeRun, newRun, runAll, saveNotebook } from "../core/actions";
 import type { KernelState, Notebook } from "../core/notebook";
 import EditorPanel from "./EditorPanel";
 import { usePushNotification } from "./NotificationProvider";
@@ -59,6 +59,19 @@ const NotebookView: React.FC<{ notebook: Notebook }> = ({ notebook }) => {
       newRun(notebook, dispatch, sendCommand);
     }
   }, [notebook, dispatch, sendCommand]);
+
+  // Auto-save: debounced save 2s after last editor change.
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => {
+    if (notebook.save_in_progress) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      saveNotebook(notebook, dispatch, sendCommand);
+    }, 2000);
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, [notebook.editor_root, notebook.save_in_progress]);
 
   const toolBtn =
     "inline-flex items-center gap-1 rounded px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-40 dark:text-gray-300 dark:hover:bg-[#2d2d2d]";

@@ -1,4 +1,3 @@
-import { highlight, languages } from "prismjs/components/prism-core";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -7,10 +6,8 @@ import {
   LuCirclePlay,
   LuClock,
 } from "react-icons/lu";
-import Editor from "react-simple-code-editor";
 import type { EditorNode, OutputCell, OutputValue } from "../core/notebook";
 import { nonNull } from "../core/util";
-import "prismjs/components/prism-python";
 import { useGlobalState } from "./StateProvider";
 
 const CodeTree: React.FC<{ node: EditorNode; depth: number }> = ({
@@ -19,17 +16,11 @@ const CodeTree: React.FC<{ node: EditorNode; depth: number }> = ({
 }) => {
   if (node.type === "Cell") {
     return (
-      <Editor
-        className={`${depth > 0 ? "border" : ""} mb-2 bt-1 border-gray-400 rounded`}
-        value={node.code}
-        highlight={(code) => highlight(code, languages.python)}
-        padding={5}
-        style={{
-          fontFamily: '"Fira code", "Fira Mono", monospace',
-          fontSize: 12,
-        }}
-        onValueChange={() => {}}
-      />
+      <pre
+        className={`${depth > 0 ? "border" : ""} mb-2 bt-1 border-gray-400 rounded p-1.5 font-mono text-xs overflow-x-auto whitespace-pre text-gray-800 dark:text-gray-200`}
+      >
+        {node.code}
+      </pre>
     );
   } else if (node.type === "Group") {
     return (

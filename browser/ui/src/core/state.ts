@@ -179,6 +179,26 @@ interface ClearOutputsAction {
   run_id: RunId;
 }
 
+interface DuplicateEditorNode {
+  type: "duplicate_editor_node";
+  notebook_id: NotebookId;
+  path: EditorNodeId[];
+}
+
+interface UndoAction {
+  type: "undo";
+}
+
+interface RedoAction {
+  type: "redo";
+}
+
+interface ToggleCellCollapse {
+  type: "toggle_cell_collapse";
+  notebook_id: NotebookId;
+  cell_id: EditorNodeId;
+}
+
 export type StateAction =
   | ClearOutputsAction
   | MoveEditorNode
@@ -202,7 +222,11 @@ export type StateAction =
   | UpdateEditorNode
   | RemoveEditorNode
   | NewGlobals
-  | SetDialog;
+  | SetDialog
+  | DuplicateEditorNode
+  | UndoAction
+  | RedoAction
+  | ToggleCellCollapse;
 
 export interface DialogConfig {
   title: string;
@@ -215,13 +239,12 @@ export interface DialogConfig {
 export interface State {
   notebooks: Notebook[];
   dir_entries: DirEntry[];
-  // Directory currently shown in the file browser, relative to the project
-  // root ("" = root).
   current_dir: string;
-  // User-configured toolchain paths (Rust/Python/Node).
   settings: Toolchains;
   selected_notebook: Notebook | null;
   dialog: DialogConfig | null;
+  undo_history: State[];
+  redo_history: State[];
 }
 
 function updateNotebooks(state: State, notebook: Notebook): State {
@@ -280,7 +303,27 @@ function updateEditor(
 }
 
 export function stateReducer(state: State, action: StateAction): State {
-  console.log("action", action);
+  if (action.type === "undo") {
+    if (state.undo_history.length === 0) return state;
+    const prev = state.undo_history[state.undo_history.length - 1];
+    const redo = [...state.redo_history.slice(-MAX_HISTORY), { ...state, undo_history: [], redo_history: [] }];
+    return { ...prev, redo_history: redo };
+  }
+  if (action.type === "redo") {
+    if (state.redo_history.length === 0) return state;
+    const next = state.redo_history[state.redo_history.length - 1];
+    const undo = [...state.undo_history, { ...state, undo_history: [], redo_history: [] }].slice(-MAX_HISTORY);
+    return { ...next, undo_history: undo };
+  }
+
+  const next = innerReducer(state, action);
+
+  if (shouldTrack(action) && next !== state) {
+    return pushHistory(state, next);
+  }
+  return next;
+}
+function innerReducer(state: State, action: StateAction): State {
   switch (action.type) {
     case "update_editor_node": {
       const notebook = nonNull(
@@ -378,6 +421,44 @@ export function stateReducer(state: State, action: StateAction): State {
       } as Notebook;
       return updateNotebooks(state, new_notebook);
     }
+    case "duplicate_editor_node": {
+      const notebook = nonNull(
+        state.notebooks.find((n) => n.id === action.notebook_id),
+      );
+      const path = action.path.slice(0, -1);
+      const parent_node = getEditorNode(notebook.editor_root, path);
+      if (parent_node === null || parent_node.type !== "Group") {
+        return state;
+      }
+      const idx = parent_node.children.findIndex(
+        (c) => c.id === action.path[action.path.length - 1],
+      );
+      if (idx === -1) return state;
+      const source = parent_node.children[idx];
+      const dup: EditorNode =
+        source.type === "Cell"
+          ? { type: "Cell", id: crypto.randomUUID(), code: source.code }
+          : {
+              type: "Group",
+              id: crypto.randomUUID(),
+              name: source.name,
+              scope: source.scope,
+              children: [...source.children],
+            };
+      const editor_root = updateEditor(notebook.editor_root, path, {
+        ...parent_node,
+        children: [
+          ...parent_node.children.slice(0, idx + 1),
+          dup,
+          ...parent_node.children.slice(idx + 1),
+        ],
+      } as EditorNode);
+      const new_notebook = {
+        ...notebook,
+        editor_root,
+      } as Notebook;
+      return updateNotebooks(state, new_notebook);
+    }
     case "move_editor_node": {
       const notebook = nonNull(
         state.notebooks.find((n) => n.id === action.notebook_id),
@@ -416,6 +497,7 @@ export function stateReducer(state: State, action: StateAction): State {
         id: action.notebook.id,
         editor_root: action.notebook.editor_root,
         editor_open_nodes: new Set(action.notebook.editor_open_nodes),
+        collapsed_cells: new Set(),
         runs: runs,
         waiting_for_fresh: [],
         current_run_id: runs.length > 0 ? runs[0].id : null,
@@ -724,6 +806,18 @@ export function stateReducer(state: State, action: StateAction): State {
       };
       return updateNotebooks(state, new_notebook);
     }
+    case "toggle_cell_collapse": {
+      const notebook = nonNull(
+        state.notebooks.find((n) => n.id === action.notebook_id),
+      );
+      const collapsed = new Set(notebook.collapsed_cells);
+      if (collapsed.has(action.cell_id)) {
+        collapsed.delete(action.cell_id);
+      } else {
+        collapsed.add(action.cell_id);
+      }
+      return updateNotebooks(state, { ...notebook, collapsed_cells: collapsed });
+    }
     default: {
       throw Error("Unknown action");
     }
@@ -737,4 +831,34 @@ export const INITIAL_STATE: State = {
   settings: { rust_toolchain: null, python: null, node: null },
   selected_notebook: null,
   dialog: null,
+  undo_history: [],
+  redo_history: [],
 };
+
+const MAX_HISTORY = 50;
+
+function pushHistory(prev: State, next: State): State {
+  const undo = [...prev.undo_history, { ...prev, undo_history: [], redo_history: [] }].slice(-MAX_HISTORY);
+  return { ...next, undo_history: undo, redo_history: [] };
+}
+
+function shouldTrack(action: StateAction): boolean {
+  switch (action.type) {
+    case "select_editor_node":
+    case "set_selected_notebook":
+    case "set_current_run":
+    case "set_run_view_mode":
+    case "toggle_open_object":
+    case "save_notebook":
+    case "set_dir_entries":
+    case "set_settings":
+    case "set_dialog":
+    case "kernel_changed":
+    case "new_output":
+    case "set_notebook_language":
+    case "toggle_cell_collapse":
+      return false;
+    default:
+      return true;
+  }
+}

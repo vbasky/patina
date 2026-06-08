@@ -91,6 +91,12 @@ interface SettingsMsg extends Toolchains {
   type: "Settings";
 }
 
+interface ExportDataMsg {
+  type: "ExportData";
+  filename: string;
+  data: string;
+}
+
 export type ToClientMessage =
   | Error
   | NewNotebookMsg
@@ -100,7 +106,8 @@ export type ToClientMessage =
   | NewGlobalsMsg
   | SaveCompletedMsg
   | SettingsMsg
-  | DirList;
+  | DirList
+  | ExportDataMsg;
 
 interface CreateNewNotebookMsg {
   type: "CreateNewNotebook";
@@ -153,6 +160,12 @@ interface DeleteFileMsg {
   path: string;
 }
 
+interface RenameFileMsg {
+  type: "RenameFile";
+  path: string;
+  new_path: string;
+}
+
 interface SetToolchainsMsg extends Toolchains {
   type: "SetToolchains";
 }
@@ -181,6 +194,11 @@ interface ForkRunMsg {
   new_run_title: string;
 }
 
+interface ExportNotebookMsg {
+  type: "ExportNotebook";
+  notebook_id: NotebookId;
+}
+
 export type FromClientMessage =
   | CreateNewNotebookMsg
   | CreateNewKernelMsg
@@ -191,10 +209,12 @@ export type FromClientMessage =
   | QueryDirMsg
   | UploadFileMsg
   | DeleteFileMsg
+  | RenameFileMsg
   | SetLanguageMsg
   | SetToolchainsMsg
   | QuerySettingsMsg
-  | SaveNotebookMsg;
+  | SaveNotebookMsg
+  | ExportNotebookMsg;
 
 export function processMessage(
   message: ToClientMessage,
@@ -287,6 +307,17 @@ export function processMessage(
     }
     case "Error": {
       pushNotification(message.message, "error");
+      break;
+    }
+    case "ExportData": {
+      const blob = new Blob([message.data], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = message.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      pushNotification("Exported to .ipynb", "success");
       break;
     }
     default: {

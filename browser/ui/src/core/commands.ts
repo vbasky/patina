@@ -76,7 +76,12 @@ export function buildMenus(ctx: CmdCtx): CommandMenu[] {
         ),
         "separator",
         { ...disabled, id: "file.open", label: "Open .ipynb…  (soon)" },
-        { ...disabled, id: "file.export", label: "Export as .ipynb…  (soon)" },
+        cmd(
+          "file.export",
+          "Export as .ipynb…",
+          hasNb,
+          () => nb && ctx.sendCommand({ type: "ExportNotebook", notebook_id: nb.id }),
+        ),
       ],
     },
     {

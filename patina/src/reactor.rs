@@ -507,6 +507,49 @@ pub(crate) fn delete_file(
     query_dir(state, sender, &parent_dir(rel))
 }
 
+pub(crate) fn rename_file(
+    state: &mut AppState,
+    sender: &UnboundedSender<Message>,
+    rel: &str,
+    new_rel: &str,
+) -> anyhow::Result<()> {
+    let from = workspace::resolve(rel).ok_or_else(|| anyhow!("Invalid path: {rel}"))?;
+    let to = workspace::resolve(new_rel).ok_or_else(|| anyhow!("Invalid path: {new_rel}"))?;
+    if from == workspace::root() {
+        bail!("Refusing to rename the workspace root");
+    }
+    if !from.exists() {
+        bail!("No such file: {rel}");
+    }
+    if to.exists() {
+        bail!("A file named {new_rel} already exists");
+    }
+    if let Some(parent) = to.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    std::fs::rename(&from, &to)?;
+
+    // Move the notebook's run sidecar directory alongside it, if present.
+    let runs_name = |p: &std::path::Path| {
+        p.with_file_name(format!(
+            "{}.runs",
+            p.file_name().unwrap_or_default().to_string_lossy()
+        ))
+    };
+    let from_runs = runs_name(&from);
+    if from_runs.is_dir() {
+        let _ = std::fs::rename(&from_runs, runs_name(&to));
+    }
+
+    // Keep an open notebook pointing at the new path so a later save writes the
+    // renamed file rather than recreating the old one.
+    if let Some((_, nb)) = state.get_notebook_by_path_mut(rel) {
+        nb.path = new_rel.to_string();
+    }
+
+    query_dir(state, sender, &parent_dir(new_rel))
+}
+
 pub(crate) fn close_run(
     state: &mut AppState,
     notebook_id: NotebookId,
@@ -522,5 +565,27 @@ pub(crate) fn close_run(
         }
         KernelState::Crashed(_) | KernelState::Closed => { /* Do nothing */ }
     }
+    Ok(())
+}
+
+pub(crate) fn export_notebook(
+    state: &AppState,
+    sender: &UnboundedSender<Message>,
+    notebook_id: NotebookId,
+) -> anyhow::Result<()> {
+    let notebook = state
+        .get_notebook_by_id(notebook_id)
+        .ok_or_else(|| anyhow!("Notebook not found"))?;
+    let json = convert::notebook_to_ipynb(notebook);
+    let filename = std::path::Path::new(&notebook.path)
+        .with_extension("ipynb")
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| "notebook.ipynb".to_string());
+    let msg = serialize_client_message(ToClientMessage::ExportData {
+        filename: &filename,
+        data: &json,
+    })?;
+    let _ = sender.send(msg);
     Ok(())
 }

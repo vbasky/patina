@@ -6,6 +6,14 @@ import {
   LuSun,
   LuSunMoon,
 } from "react-icons/lu";
+import {
+  deleteCell,
+  duplicateCell,
+  insertCell,
+  moveCell,
+  runAll,
+  saveNotebook,
+} from "../core/actions";
 import { buildMenus, flattenCommands } from "../core/commands";
 import { cycleTheme, getThemeMode, onThemeChange } from "../core/theme";
 import CommandPalette from "./CommandPalette";
@@ -112,18 +120,99 @@ const GlobalTabs = () => {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (
-        (e.metaKey || e.ctrlKey) &&
-        e.shiftKey &&
-        e.key.toLowerCase() === "c"
-      ) {
+      const ctrl = e.metaKey || e.ctrlKey;
+      const active = document.activeElement;
+      // Don't intercept when Monaco editor is focused
+      const inMonaco =
+        active?.closest(".patina-monaco-cell") != null ||
+        active?.closest(".monaco-editor") != null;
+
+      // Ctrl+Shift+C: command palette
+      if (ctrl && e.shiftKey && e.key.toLowerCase() === "c") {
         e.preventDefault();
         setPalette((p) => !p);
+        return;
+      }
+
+      if (!inMonaco) return;
+
+      // Ctrl+S: save notebook
+      if (ctrl && !e.shiftKey && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        if (notebook) saveNotebook(notebook, dispatch, sendCommand);
+        return;
+      }
+
+      // Ctrl+Shift+Enter: run all cells
+      if (ctrl && e.shiftKey && e.key === "Enter") {
+        e.preventDefault();
+        if (notebook) runAll(notebook, dispatch, sendCommand, pushNotification);
+        return;
+      }
+
+      const sel = notebook?.selected_editor_node_id ?? null;
+
+      // Ctrl+D: duplicate selected cell
+      if (ctrl && !e.shiftKey && e.key.toLowerCase() === "d") {
+        e.preventDefault();
+        if (notebook && sel) {
+          duplicateCell(notebook, sel, dispatch);
+        }
+        return;
+      }
+
+      // Ctrl+Shift+K: delete selected cell
+      if (ctrl && e.shiftKey && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        if (notebook && sel) {
+          deleteCell(notebook, sel, dispatch);
+        }
+        return;
+      }
+
+      // Ctrl+Shift+Up / Ctrl+Shift+Down: move cell
+      if (ctrl && e.shiftKey && e.key === "ArrowUp") {
+        e.preventDefault();
+        if (notebook && sel) {
+          moveCell(notebook, sel, "up", dispatch);
+        }
+        return;
+      }
+      if (ctrl && e.shiftKey && e.key === "ArrowDown") {
+        e.preventDefault();
+        if (notebook && sel) {
+          moveCell(notebook, sel, "down", dispatch);
+        }
+        return;
+      }
+
+      // Ctrl+Z / Ctrl+Shift+Z: undo/redo
+      if (ctrl && !e.shiftKey && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        dispatch({ type: "undo" });
+        return;
+      }
+      if (ctrl && e.shiftKey && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        dispatch({ type: "redo" });
+        return;
+      }
+
+      // Ctrl+Shift+B / Ctrl+B: insert code/markdown cell after selected
+      if (ctrl && e.shiftKey && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        if (notebook) insertCell(notebook, sel, false, dispatch);
+        return;
+      }
+      if (ctrl && !e.shiftKey && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        if (notebook) insertCell(notebook, sel, true, dispatch);
+        return;
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [dispatch, sendCommand, pushNotification, notebook]);
 
   return (
     <div className="flex h-full w-full flex-col bg-white text-gray-900 dark:bg-[#1e1e1e] dark:text-gray-100">

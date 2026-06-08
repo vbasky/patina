@@ -17,12 +17,19 @@ pub(crate) enum FromClientMessage {
     QueryDir(QueryDirMsg),
     UploadFile(UploadFileMsg),
     DeleteFile(DeleteFileMsg),
+    RenameFile(RenameFileMsg),
     SetLanguage(SetLanguageMsg),
     SetToolchains(crate::settings::Settings),
     QuerySettings,
     CloseRun(NotebookRunMsg),
     KernelList,
     Fork(ForkMsg),
+    ExportNotebook(ExportNotebookMsg),
+}
+
+#[derive(Debug, Deserialize)]
+pub(crate) struct ExportNotebookMsg {
+    pub notebook_id: NotebookId,
 }
 
 #[derive(Debug, Deserialize)]
@@ -93,6 +100,14 @@ pub(crate) struct UploadFileMsg {
 pub(crate) struct DeleteFileMsg {
     /// Path to delete, relative to the workspace root.
     pub path: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub(crate) struct RenameFileMsg {
+    /// Existing path, relative to the workspace root.
+    pub path: String,
+    /// New path, relative to the workspace root.
+    pub new_path: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -201,6 +216,10 @@ pub(crate) enum ToClientMessage<'a> {
     },
     Kernels {
         kernels: Vec<KernelInfo>,
+    },
+    ExportData {
+        filename: &'a str,
+        data: &'a str,
     },
 }
 

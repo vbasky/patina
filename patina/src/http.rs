@@ -2,8 +2,9 @@ use crate::client_messages::{
     FromClientMessage, ToClientMessage, parse_client_message, serialize_client_message,
 };
 use crate::reactor::{
-    close_run, delete_file, fork_run, load_notebook, new_notebook, query_dir, query_settings,
-    run_code, save_notebook, set_language, set_toolchains, start_kernel, upload_file,
+    close_run, delete_file, export_notebook, fork_run, load_notebook, new_notebook, query_dir,
+    query_settings, rename_file, run_code, save_notebook, set_language, set_toolchains,
+    start_kernel, upload_file,
 };
 use crate::state::{AppState, AppStateRef};
 use anyhow::bail;
@@ -179,6 +180,9 @@ fn process_client_message(
         FromClientMessage::DeleteFile(msg) => {
             delete_file(state, sender, &msg.path)?;
         }
+        FromClientMessage::RenameFile(msg) => {
+            rename_file(state, sender, &msg.path, &msg.new_path)?;
+        }
         FromClientMessage::SetLanguage(msg) => {
             set_language(state, msg.notebook_id, msg.language)?;
         }
@@ -195,6 +199,9 @@ fn process_client_message(
             let _ = sender.send(serialize_client_message(ToClientMessage::Kernels {
                 kernels: state.kernel_list(),
             })?);
+        }
+        FromClientMessage::ExportNotebook(msg) => {
+            export_notebook(state, sender, msg.notebook_id)?;
         }
     };
     Ok(())

@@ -23,7 +23,6 @@ html.dark {
   color-scheme: dark;
 }
 
-.npm__react-simple-code-editor__textarea,
 .patina-md pre,
 .patina-md code {
   font-family: var(--font-mono);
@@ -80,57 +79,4 @@ html.dark {
 .patina-md pre code {
   background: none;
   padding: 0;
-}
-
-/* Prism's stock theme paints a translucent background behind operator/entity
-   tokens (&, =>, =, <, >) — it reads as ugly boxes, especially on dark. Kill it. */
-.token.operator,
-.token.entity,
-.token.url {
-  background: none !important;
-}
-
-/* Prism token colors in dark mode (GitHub-dark-ish). */
-.dark pre,
-.dark code,
-.dark .npm__react-simple-code-editor__textarea {
-  color: #c9d1d9;
-  caret-color: #c9d1d9;
-}
-.dark .token.comment,
-.dark .token.prolog,
-.dark .token.doctype,
-.dark .token.cdata {
-  color: #8b949e;
-}
-.dark .token.punctuation {
-  color: #c9d1d9;
-}
-.dark .token.keyword,
-.dark .token.tag,
-.dark .token.operator,
-.dark .token.deleted {
-  color: #ff7b72;
-}
-.dark .token.string,
-.dark .token.char,
-.dark .token.attr-value,
-.dark .token.inserted {
-  color: #a5d6ff;
-}
-.dark .token.number,
-.dark .token.boolean,
-.dark .token.constant,
-.dark .token.symbol {
-  color: #79c0ff;
-}
-.dark .token.function,
-.dark .token.class-name,
-.dark .token.macro {
-  color: #d2a8ff;
-}
-.dark .token.property,
-.dark .token.attr-name,
-.dark .token.variable {
-  color: #ffa657;
 }

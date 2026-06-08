@@ -18,11 +18,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   LuChevronDown,
   LuChevronRight,
+  LuChevronUp,
   LuCircleAlert,
   LuCircleCheck,
   LuClock,
   LuCode,
   LuFolderPlus,
+  LuGripVertical,
   LuLoaderCircle,
   LuPlay,
   LuPlus,
@@ -39,6 +41,8 @@ import {
   removeEditorNode,
   runCode,
   saveNotebook,
+  findNodeById,
+  findPathById,
 } from "../core/actions";
 import {
   isMarkdownCell,
@@ -69,25 +73,25 @@ function latestOutputFor(
   return null;
 }
 
-// Live "compiling… 1.4s" / "running… 1.4s" timer shown while a cell is pending.
-const RunningTimer: React.FC<{ label: string }> = ({ label }) => {
-  const [ms, setMs] = useState(0);
-  useEffect(() => {
-    const start = Date.now();
-    const id = window.setInterval(() => setMs(Date.now() - start), 100);
-    return () => window.clearInterval(id);
-  }, []);
-  return (
-    <span>
-      {label} {(ms / 1000).toFixed(1)}s
-    </span>
-  );
-};
-
 const InlineOutput: React.FC<{ cell: OutputCell; execCount: number }> = ({
   cell,
   execCount,
 }) => {
+  const [startMs] = useState(() => Date.now());
+  const [elapsed, setElapsed] = useState(0);
+  const final = cell.flag === "Success" || cell.flag === "Fail";
+
+  useEffect(() => {
+    if (cell.flag === "Pending" || cell.flag === "Running") {
+      const id = setInterval(() => {
+        setElapsed(Date.now() - startMs);
+      }, 100);
+      return () => clearInterval(id);
+    }
+    // On completion, capture the final elapsed time
+    setElapsed(Date.now() - startMs);
+  }, [cell.flag, startMs]);
+
   const pending = cell.flag === "Pending" || cell.flag === "Running";
   const label = pending ? "[*]" : `[${execCount}]`;
   const statusIcon = () => {
@@ -112,9 +116,16 @@ const InlineOutput: React.FC<{ cell: OutputCell; execCount: number }> = ({
         <span>{label}</span>
       </div>
       <div className="flex-1 min-w-0">
-        {pending && (
+        {(pending || final) && (
           <div className="mb-0.5 text-[11px] text-gray-400">
-            <RunningTimer label={hasContent ? "running…" : "compiling…"} />
+            {pending ? (
+              <span>
+                {hasContent ? "running… " : "compiling… "}
+                {(elapsed / 1000).toFixed(1)}s
+              </span>
+            ) : (
+              <span>{(elapsed / 1000).toFixed(1)}s</span>
+            )}
           </div>
         )}
         {hasContent && (
@@ -130,29 +141,48 @@ const InlineOutput: React.FC<{ cell: OutputCell; execCount: number }> = ({
 };
 
 // A thin "+ Code / + Markdown" inserter between/after cells.
+// Also serves as a drop target for drag-and-drop reordering.
 const InsertBar: React.FC<{
   onInsert: (markdown: boolean) => void;
-}> = ({ onInsert }) => (
-  <div className="group/insert relative my-0.5 flex h-4 items-center justify-center">
-    <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-gray-200 opacity-0 group-hover/insert:opacity-100 dark:border-[#3a3a3a]" />
-    <div className="z-10 flex gap-1 opacity-0 transition group-hover/insert:opacity-100">
-      <button
-        type="button"
-        onClick={() => onInsert(false)}
-        className="inline-flex items-center gap-1 rounded border border-gray-200 bg-white px-2 py-0.5 text-[11px] text-gray-600 hover:bg-gray-50 dark:border-[#3a3a3a] dark:bg-[#2d2d2d] dark:text-gray-300 dark:hover:bg-[#3a3a3a]"
-      >
-        <LuPlus size={11} /> Code
-      </button>
-      <button
-        type="button"
-        onClick={() => onInsert(true)}
-        className="inline-flex items-center gap-1 rounded border border-gray-200 bg-white px-2 py-0.5 text-[11px] text-gray-600 hover:bg-gray-50 dark:border-[#3a3a3a] dark:bg-[#2d2d2d] dark:text-gray-300 dark:hover:bg-[#3a3a3a]"
-      >
-        <LuPlus size={11} /> Markdown
-      </button>
+  onDropCell?: (dragId: string) => void;
+}> = ({ onInsert, onDropCell }) => {
+  const [dragOver, setDragOver] = useState(false);
+  return (
+    <div
+      className={`group/insert relative my-0.5 flex h-4 items-center justify-center rounded transition-colors ${dragOver ? "bg-blue-100 dark:bg-blue-900/30 h-8" : ""}`}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        setDragOver(true);
+      }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragOver(false);
+        const dragId = e.dataTransfer.getData("text/plain");
+        if (dragId && onDropCell) onDropCell(dragId);
+      }}
+    >
+      <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-gray-200 opacity-0 group-hover/insert:opacity-100 dark:border-[#3a3a3a]" />
+      <div className="z-10 flex gap-1 opacity-0 transition group-hover/insert:opacity-100">
+        <button
+          type="button"
+          onClick={() => onInsert(false)}
+          className="inline-flex items-center gap-1 rounded border border-gray-200 bg-white px-2 py-0.5 text-[11px] text-gray-600 hover:bg-gray-50 dark:border-[#3a3a3a] dark:bg-[#2d2d2d] dark:text-gray-300 dark:hover:bg-[#3a3a3a]"
+        >
+          <LuPlus size={11} /> Code
+        </button>
+        <button
+          type="button"
+          onClick={() => onInsert(true)}
+          className="inline-flex items-center gap-1 rounded border border-gray-200 bg-white px-2 py-0.5 text-[11px] text-gray-600 hover:bg-gray-50 dark:border-[#3a3a3a] dark:bg-[#2d2d2d] dark:text-gray-300 dark:hover:bg-[#3a3a3a]"
+        >
+          <LuPlus size={11} /> Markdown
+        </button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const EditorNamedNodeRenderer: React.FC<{
   notebook: Notebook;
@@ -340,6 +370,30 @@ function moveToNode(
   }
 }
 
+const DragHandle: React.FC<{
+  cell: EditorCell;
+}> = ({ cell }) => {
+  const onDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData("text/plain", cell.id);
+    e.dataTransfer.effectAllowed = "move";
+    (e.currentTarget as HTMLElement).closest(".group\\/cell")?.classList.add("opacity-50");
+  };
+  const onDragEnd = (e: React.DragEvent) => {
+    (e.currentTarget as HTMLElement).closest(".group\\/cell")?.classList.remove("opacity-50");
+  };
+  return (
+    <div
+      draggable
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      className="mt-1 mr-0.5 flex-shrink-0 opacity-0 group-hover/cell:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-grab active:cursor-grabbing p-0.5 rounded transition-opacity"
+      title="Drag to reorder"
+    >
+      <LuGripVertical size={14} />
+    </div>
+  );
+};
+
 const EditorCellRenderer: React.FC<{
   notebook: Notebook;
   run: Run | null;
@@ -352,6 +406,7 @@ const EditorCellRenderer: React.FC<{
   const pushNotification = usePushNotification();
   const isSelected = notebook.selected_editor_node_id === cell.id;
   const isMd = isMarkdownCell(cell.code);
+  const isCollapsed = notebook.collapsed_cells?.has(cell.id) ?? false;
   const output = latestOutputFor(run, cell.id);
   // Syntax-highlight fenced code blocks inside rendered markdown (marked emits
   // <pre><code class="language-…">, but doesn't run a highlighter itself).
@@ -425,47 +480,143 @@ const EditorCellRenderer: React.FC<{
       node_update: { code: isMd ? toCode(cell.code) : toMarkdown(cell.code) },
     });
 
+  const toggleCollapse = () =>
+    dispatch({
+      type: "toggle_cell_collapse",
+      notebook_id: notebook.id,
+      cell_id: cell.id,
+    });
+
+  // Drop a dragged cell after this one.
+  const handleDropCell = (dragId: string) => {
+    if (dragId === cell.id) return;
+    const dragNode = findNodeById(notebook.editor_root, dragId);
+    const dragPath = findPathById(notebook.editor_root, dragId);
+    if (!dragNode || !dragPath) return;
+    // Remove from old position and re-insert after this cell.
+    dispatch({
+      type: "remove_editor_node",
+      notebook_id: notebook.id,
+      path: dragPath,
+    });
+    dispatch({
+      type: "new_editor_node",
+      notebook_id: notebook.id,
+      path,
+      editor_node: dragNode,
+      insert_type: "after",
+    });
+    dispatch({
+      type: "select_editor_node",
+      notebook_id: notebook.id,
+      editor_node_id: dragId,
+    });
+  };
+
+  // Collapsed markdown view (rendered or not) — show first line only.
+  if (isCollapsed && isMd) {
+    const firstLine = markdownSource(cell.code).split("\n")[0] || cell.code;
+    return (
+      <div className="flex items-start group/cell pl-1 my-0.5">
+        <DragHandle cell={cell} />
+        <div className="flex-1 min-w-0">
+          <div
+            className="patina-md cursor-pointer rounded px-3 py-1 bg-gray-50/50 border border-gray-100 hover:bg-gray-50 dark:bg-[#2d2d2d]/30 dark:border-[#3a3a3a] dark:hover:bg-[#2d2d2d]"
+            onClick={() => toggleCollapse()}
+            title="Click to expand"
+          >
+            <span className="text-xs text-gray-500 line-clamp-1 font-mono truncate block">
+              {firstLine || "(empty markdown)"}
+            </span>
+          </div>
+          <InsertBar onInsert={insertAfter} onDropCell={handleDropCell} />
+        </div>
+      </div>
+    );
+  }
+
   // Rendered markdown view (not selected) — click to edit.
   if (isMd && !isSelected) {
     const html = marked.parse(
       markdownSource(cell.code) || "*empty markdown*",
     ) as string;
     return (
-      <div className={`relative border-l-6 border-transparent pl-1`}>
-        <div
-          ref={mdRef}
-          className="patina-md cursor-text rounded px-3 py-2 hover:bg-gray-50 dark:text-gray-100 dark:hover:bg-[#2d2d2d]"
-          onClick={() => {
-            dispatch({
-              type: "select_editor_node",
-              notebook_id: notebook.id,
-              editor_node_id: cell.id,
-            });
-            setTimeout(() => focusId(cell.id), 0);
-          }}
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
-        <InsertBar onInsert={insertAfter} />
+      <div className="flex items-start group/cell pl-1">
+        <DragHandle cell={cell} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start">
+            <button
+              type="button"
+              onClick={toggleCollapse}
+              title="Collapse cell"
+              className="mt-1 mr-1 opacity-0 group-hover/cell:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 rounded"
+            >
+              <LuChevronUp size={12} />
+            </button>
+            <div
+              ref={mdRef}
+              className="patina-md cursor-text rounded px-3 py-2 hover:bg-gray-50 dark:text-gray-100 dark:hover:bg-[#2d2d2d] flex-1"
+              onClick={() => {
+                dispatch({
+                  type: "select_editor_node",
+                  notebook_id: notebook.id,
+                  editor_node_id: cell.id,
+                });
+                setTimeout(() => focusId(cell.id), 0);
+              }}
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+          </div>
+          <InsertBar onInsert={insertAfter} onDropCell={handleDropCell} />
+        </div>
+      </div>
+    );
+  }
+
+  // Collapsed code cell (selected or not) — show first line only.
+  if (isCollapsed && !isMd) {
+    const firstLine = cell.code.split("\n")[0] || "(empty)";
+    return (
+      <div className="flex items-start group/cell pl-1 my-0.5">
+        <DragHandle cell={cell} />
+        <div className="flex-1 min-w-0">
+          <div
+            className="cursor-pointer rounded px-3 py-1 bg-gray-50/50 border border-gray-100 hover:bg-gray-50 dark:bg-[#2d2d2d]/30 dark:border-[#3a3a3a] dark:hover:bg-[#2d2d2d]"
+            onClick={() => toggleCollapse()}
+            title="Click to expand"
+          >
+            <span className="text-xs text-gray-500 font-mono truncate block">
+              {firstLine}
+              {cell.code.includes("\n") ? " …" : ""}
+            </span>
+          </div>
+          {output && (
+            <InlineOutput cell={output.cell} execCount={output.execCount} />
+          )}
+          <InsertBar onInsert={insertAfter} onDropCell={handleDropCell} />
+        </div>
       </div>
     );
   }
 
   return (
     <div
-      className={`relative border-l-6 pl-1 ${isSelected ? "border-blue-300" : "border-transparent"}`}
+      className={`relative flex items-start pl-1 group/cell ${isSelected ? "border-l-6 border-blue-300" : "border-l-6 border-transparent"}`}
     >
-      {isSelected && (
-        <NodeToolbar
-          className="z-10 absolute top-0 right-0 mt-2 mr-2"
-          node={cell}
-          notebook={notebook}
-          path={path}
-          isRoot={false}
-        />
-      )}
-      <div
-        className={`mb-1 overflow-hidden rounded-md border bg-white dark:bg-[#252526] ${isMd ? "border-amber-300 dark:border-amber-500/50" : "border-gray-300 dark:border-[#3a3a3a]"}`}
-      >
+      <DragHandle cell={cell} />
+      <div className="flex-1 min-w-0">
+        {isSelected && (
+          <NodeToolbar
+            className="z-10 absolute top-0 right-0 mt-2 mr-2"
+            node={cell}
+            notebook={notebook}
+            path={path}
+            isRoot={false}
+          />
+        )}
+        <div
+          className={`mb-1 overflow-hidden rounded-md border bg-white dark:bg-[#252526] ${isMd ? "border-amber-300 dark:border-amber-500/50" : "border-gray-300 dark:border-[#3a3a3a]"}`}
+        >
         <MonacoCell
           id={cell.id}
           value={cell.code}
@@ -494,7 +645,6 @@ const EditorCellRenderer: React.FC<{
           onEscape={deselectThis}
           onMoveUp={() => moveToNode(cell, orderedNodes, true)}
           onMoveDown={() => moveToNode(cell, orderedNodes, false)}
-          onDelete={deleteThis}
         />
         <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-2 py-1 text-xs dark:border-[#3a3a3a] dark:bg-[#2d2d2d]">
           <div className="flex items-center gap-2">
@@ -511,6 +661,14 @@ const EditorCellRenderer: React.FC<{
               <LuPlay className="mr-1" size={12} />
               {isMd ? "Render" : "Run"}
               <span className="ml-2 text-gray-400">⇧⏎</span>
+            </button>
+            <button
+              type="button"
+              title="Collapse cell"
+              onClick={toggleCollapse}
+              className="inline-flex items-center gap-1 hover:text-purple-600"
+            >
+              <LuChevronUp size={13} />
             </button>
           </div>
           <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
@@ -537,7 +695,8 @@ const EditorCellRenderer: React.FC<{
       {!isMd && output && (
         <InlineOutput cell={output.cell} execCount={output.execCount} />
       )}
-      <InsertBar onInsert={insertAfter} />
+      <InsertBar onInsert={insertAfter} onDropCell={handleDropCell} />
+      </div>
     </div>
   );
 };

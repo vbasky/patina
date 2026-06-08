@@ -1,7 +1,8 @@
 // Convert foreign notebook/document formats into Patina notebooks.
 //
-//   * `.md`     — prose becomes Markdown cells; fenced ```rust blocks become
-//                 runnable code cells. Other-language fences stay in the prose.
+//   * `.md`     — prose becomes Markdown cells; fenced code blocks become
+//                 runnable code cells (rust, python, js/javascript/typescript).
+//                 Other-language fences stay in the prose.
 //   * `.ipynb`  — Jupyter cells map directly (code → code, markdown/raw → md).
 //
 // Markdown cells are ordinary code cells whose first line is the `//md` marker
@@ -78,19 +79,24 @@ pub(crate) fn ipynb_language(json: &str) -> Language {
     }
 }
 
-/// True for fenced-code languages we lift into runnable code cells.
-fn is_rust_lang(lang: &str) -> bool {
-    matches!(lang.trim(), "" | "rust" | "rs")
+/// Map a Markdown fence language tag to a Patina language (or None for non-code).
+fn code_lang(lang: &str) -> Option<Language> {
+    match lang.trim().to_ascii_lowercase().as_str() {
+        "" | "rust" | "rs" => Some(Language::Rust),
+        "python" | "py" => Some(Language::Python),
+        "javascript" | "js" | "typescript" | "ts" => Some(Language::TypeScript),
+        _ => None,
+    }
 }
 
-/// Split Markdown into Markdown/code cells. Fenced ```rust blocks become code
-/// cells; everything else (prose and other-language fences) stays Markdown.
+/// Split Markdown into Markdown/code cells. Fenced code blocks (rust, python,
+/// js, etc.) become runnable code cells; everything else stays Markdown.
 pub(crate) fn markdown_to_cells(md: &str) -> Vec<Cell> {
     let mut cells: Vec<Cell> = Vec::new();
     let mut md_buf: Vec<&str> = Vec::new();
     let mut code_buf: Vec<&str> = Vec::new();
-    let mut in_code = false; // inside a ```rust block we're lifting out
-    let mut in_other = false; // inside a non-rust fence we keep in the prose
+    let mut in_code = false; // inside a recognized code fence
+    let mut in_other = false; // inside a fence we keep in the prose
 
     let flush_md = |buf: &mut Vec<&str>, cells: &mut Vec<Cell>| {
         let text = buf.join("\n");
@@ -118,7 +124,7 @@ pub(crate) fn markdown_to_cells(md: &str) -> Vec<Cell> {
             }
         } else if is_fence {
             let lang = &trimmed[3..];
-            if is_rust_lang(lang) {
+            if code_lang(lang).is_some() {
                 flush_md(&mut md_buf, &mut cells);
                 in_code = true;
             } else {
@@ -167,4 +173,65 @@ pub(crate) fn ipynb_to_cells(json: &str) -> anyhow::Result<Vec<Cell>> {
             Some((kind != "code", text))
         })
         .collect())
+}
+
+/// Convert a Patina notebook to Jupyter .ipynb JSON.
+pub(crate) fn notebook_to_ipynb(notebook: &Notebook) -> String {
+    let cells: Vec<serde_json::Value> = notebook
+        .editor_root
+        .children
+        .iter()
+        .filter_map(|node| {
+            let (is_md, code) = match node {
+                EditorNode::Cell(cell) => (
+                    cell.code.starts_with("//md"),
+                    if cell.code.starts_with("//md") {
+                        cell.code.replacen("//md\n", "", 1)
+                    } else {
+                        cell.code.clone()
+                    },
+                ),
+                _ => return None,
+            };
+            let mut cell = serde_json::Map::new();
+            if is_md {
+                cell.insert("cell_type".into(), "markdown".into());
+                cell.insert("source".into(), vec![code].into());
+            } else {
+                cell.insert("cell_type".into(), "code".into());
+                cell.insert("source".into(), vec![code].into());
+                cell.insert("outputs".into(), serde_json::Value::Array(vec![]));
+                cell.insert(
+                    "execution_count".into(),
+                    serde_json::Value::Null,
+                );
+            }
+            cell.insert("metadata".into(), serde_json::Map::new().into());
+            Some(serde_json::Value::Object(cell))
+        })
+        .collect();
+
+    let language = match notebook.language {
+        Language::Python => "python",
+        Language::TypeScript => "javascript",
+        _ => "rust",
+    };
+
+    let notebook_json = serde_json::json!({
+        "nbformat": 4,
+        "nbformat_minor": 5,
+        "metadata": {
+            "kernelspec": {
+                "display_name": language,
+                "language": language,
+                "name": language,
+            },
+            "language_info": {
+                "name": language,
+            },
+        },
+        "cells": cells,
+    });
+
+    serde_json::to_string_pretty(&notebook_json).unwrap_or_default()
 }
