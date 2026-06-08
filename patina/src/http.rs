@@ -54,23 +54,46 @@ pub(crate) async fn http_server_main(state: AppStateRef, port: u16) -> anyhow::R
     Ok(())
 }
 
-async fn get_assets(Path(name): Path<String>) -> impl IntoResponse {
-    let (data, content_type) = if name.ends_with("css") {
-        (
-            include_bytes!("../../browser/ui/dist/assets/index.css.gz").as_ref(),
-            "text/css",
-        )
+// The built UI assets. The Monaco-based editor makes Vite emit ~180 lazily
+// loaded chunks plus web workers (ts.worker, css.worker, …), so the server must
+// serve each requested file — not a single bundle. Only the gzip variants are
+// embedded (Vite precompresses everything); we serve them with `Content-Encoding:
+// gzip`. In debug builds rust-embed reads them from disk; release builds embed.
+#[derive(rust_embed::RustEmbed)]
+#[folder = "../browser/ui/dist/assets/"]
+#[include = "*.gz"]
+struct Assets;
+
+fn asset_content_type(name: &str) -> &'static str {
+    if name.ends_with(".css") {
+        "text/css"
+    } else if name.ends_with(".js") {
+        "text/javascript"
+    } else if name.ends_with(".json") {
+        "application/json"
+    } else if name.ends_with(".svg") {
+        "image/svg+xml"
+    } else if name.ends_with(".ttf") {
+        "font/ttf"
+    } else if name.ends_with(".woff2") {
+        "font/woff2"
     } else {
-        (
-            include_bytes!("../../browser/ui/dist/assets/index.js.gz").as_ref(),
-            "text/javascript",
-        )
-    };
-    Response::builder()
-        .header(header::CONTENT_TYPE, content_type)
-        .header(header::CONTENT_ENCODING, "gzip")
-        .body(Body::from(data))
-        .unwrap()
+        "application/octet-stream"
+    }
+}
+
+async fn get_assets(Path(name): Path<String>) -> impl IntoResponse {
+    match Assets::get(&format!("{name}.gz")) {
+        Some(file) => Response::builder()
+            .header(header::CONTENT_TYPE, asset_content_type(&name))
+            .header(header::CONTENT_ENCODING, "gzip")
+            .body(Body::from(file.data.into_owned()))
+            .unwrap(),
+        None => Response::builder()
+            .status(axum::http::StatusCode::NOT_FOUND)
+            .body(Body::empty())
+            .unwrap(),
+    }
 }
 
 async fn index(State(state): State<AppStateRef>) -> impl IntoResponse {

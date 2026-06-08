@@ -24,3 +24,6 @@ toml = "0.8"
 jiff = { version = "0.2", features = ["serde"] }
 rand = "0.9"
 tempfile = "3.20"
+# Embed the built UI assets (every Vite chunk + Monaco worker, gzip-compressed)
+# so the server can serve them all — not just one bundle.
+rust-embed = { version = "8", features = ["include-exclude"] }
