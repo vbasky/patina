@@ -25,15 +25,15 @@ Add crates with `:dep`, then render rich output two ways:
 - **`patina_html(&html)` / `patina_svg(&svg)`** — built-in helpers that display any
   HTML/SVG fragment (e.g. a polars table rendered to HTML, or any plotters SVG string).
 
-Run top to bottom (`Shift`+`Enter`). The first `:dep` compiles the crate, so it can take
-a bit; later cells are fast.'''
+Run top to bottom (`Shift`+`Enter`). Heads up: polars is a large crate, so the first
+`:dep` cell compiles for ~a minute (one time — it's cached afterwards, and across
+restarts). Plain Rust notebooks with no heavy `:dep` start instantly.'''
 
 [[editor_root.children]]
 type = "Cell"
 id = "7c27d50f-a831-4e4f-916f-aa5a24e6f8f8"
 code = '''
-// polars is preloaded (batteries-included), so no `:dep` is needed — that also
-// avoids recompiling it. (Other crates: add them with `:dep foo = "1"`.)
+:dep polars = { version = "0.46", features = ["fmt"] }
 use polars::prelude::*;
 
 // evcxr persists `let` bindings across cells and needs a concrete type to do
@@ -61,7 +61,7 @@ it as the last expression renders an inline SVG.'''
 type = "Cell"
 id = "06e6431c-7d82-494c-bdd1-b1bfc013fb19"
 code = '''
-// plotters is preloaded too (with evcxr support) — no `:dep` needed.
+:dep plotters = { version = "^0.3", default-features = true, features = ["evcxr"] }
 use plotters::prelude::*;
 use plotters::evcxr::evcxr_figure;
 

@@ -23,12 +23,17 @@ fn patina_svg(svg: &str) {
 }
 "#;
 
-/// Whether to preload the batteries-included crates. On unless `PATINA_BATTERIES`
-/// is set to a falsy value.
+/// Whether to preload the batteries-included data crates (polars/plotters/
+/// ndarray). OFF by default: preloading them forces a ~55s polars compile before
+/// the kernel is usable, which makes every Rust notebook — even ones that never
+/// touch a dataframe — slow to start. With this off, a fresh Rust notebook
+/// compiles cells in ~1-2s; notebooks that want the data crates opt in with a
+/// `:dep` line (compiled once, then cached across runs via evcxr's `:cache`).
+/// Set `PATINA_BATTERIES=1` to preload them anyway.
 fn batteries_enabled() -> bool {
-    !matches!(
+    matches!(
         std::env::var("PATINA_BATTERIES").as_deref(),
-        Ok("0") | Ok("off") | Ok("false")
+        Ok("1") | Ok("on") | Ok("true")
     )
 }
 
@@ -73,9 +78,10 @@ pub fn spawn_executor(
         // `patina_html(&html)` for any HTML table.
         let _ = context.execute(PRELUDE);
 
-        // Batteries-included: preload common data crates so cells can `use` them
-        // with no `:dep`. Compiled once at startup (sccache caches across
-        // restarts). On by default; set PATINA_BATTERIES=0 for a faster start.
+        // Batteries-included: opt-in preload of the data crates (polars/plotters/
+        // ndarray) so cells can `use` them with no `:dep`. OFF by default — see
+        // `batteries_enabled` — because preloading forces a ~55s polars compile
+        // before the kernel is usable. Enable with PATINA_BATTERIES=1.
         if batteries_enabled() {
             for dep in [
                 r#":dep ndarray = "0.16""#,
