@@ -19,10 +19,6 @@ kernel-protocol plumbing.
 Code and outputs stay separate, run history is preserved instead of clobbered, and
 live variables are inspectable.
 
-> The original design, server, and UI are upstream's; Patina replaces the single
-> Python kernel with native Rust / Python / JavaScript kernels. See `LICENSE-MIT` /
-> `LICENSE-APACHE`.
-
 ## Languages
 
 Each notebook runs one language. Pick it when you create the notebook (dropdown in the
@@ -41,25 +37,140 @@ matching kernel binary.
 - **JavaScript** — top-level `let`/`const` don't persist across cells (a boa/REPL limit);
   `var` and global assignments do.
 
+## How it works
+
+When you press `Shift+Enter` in the browser, here's what happens start to finish:
+
+```
+┌──────────────┐     WebSocket (JSON)     ┌──────────────┐     TCP (bincode)     ┌──────────────┐
+│  Browser UI  │ ◄──────────────────────► │   Server     │ ◄───────────────────► │   Kernel     │
+│   (React)    │                          │   (Axum)     │                       │   Process    │
+│              │                          │              │                       │              │
+│  ─ cell code ──►  RunCode               │              │  ──► Compute(cell)    │              │
+│              │                          │              │                       │              │
+│              │   Output ◄────────────── │              │  ◄── Output(text)     │              │
+│              │   Output ◄────────────── │              │  ◄── Output(html)     │              │
+│              │   Output ◄────────────── │              │  ◄── Output(text)     │              │
+│              │                          │              │                       │              │
+```
+
+**Step by step:**
+
+1. **Browser** sends a `RunCode` message over WebSocket containing the notebook id,
+   run id, cell id, and editor tree. The server queues the request on that run.
+
+2. **Server** sends `Compute { cell_id, code }` over TCP to the kernel process (already
+   spawned and connected). The wire format is length-delimited bincode — compact and
+   binary.
+
+3. **Kernel** executes the cell in the language runtime (`evcxr` for Rust, embedded
+   CPython for Python, `boa` for JS). As it runs, it streams back `Output` messages:
+   - `Text` — stdout/stderr lines. The server accumulates consecutive text fragments
+     so the browser can render them in real time as the cell runs.
+   - `Html` — rich output: a pandas DataFrame table, a matplotlib chart, a plotters
+     graph. Rendered immediately in the browser as innerHTML.
+   - `Exception` — compilation error or runtime exception with a traceback.
+   Each message carries an `OutputFlag`: `Running` (intermediate), `Success`, or `Fail`.
+
+4. **Server** forwards each output to the browser over WebSocket (as JSON), tagged
+   with the cell and run id. The browser UI appends streaming text, replaces final
+   results, and shows error panels.
+
+5. After the final output, the kernel also sends a **globals update** — the set of
+   variables changed by the cell (name, type, `repr()` value). The browser renders
+   these in the inspector sidebar.
+
+**Protocols:**
+
+| Direction | Transport | Format | Purpose |
+| --------- | --------- | ------ | ------- |
+| Browser → Server | WebSocket | JSON | User actions (run code, save, fork, navigate files) |
+| Server → Browser | WebSocket | JSON | Output, notebook state, globals, errors |
+| Server → Kernel | TCP | bincode | Compute requests, save/load state |
+| Kernel → Server | TCP | bincode | Output values, globals updates, state responses |
+
+**State model:**
+
+- Kernels are **child OS processes** — a kernel crash never takes down the server.
+- Each notebook has multiple **runs**. Each run has its own kernel process and its own
+  timeline of output cells. You can fork a run: the kernel saves its globals, a new
+  kernel loads them, and execution branches from that point.
+- The server holds all state behind an `Arc<Mutex<AppState>>`. Lock is held briefly
+  (message dispatch only), never across I/O.
+
 ## Rich output
 
-A cell renders its last expression — as text, or as HTML / images:
+A cell's result is not just a plain string — the last expression is rendered in the
+richest available format. The kernel chooses from four output types:
 
-- **Python** (Jupyter-style): pandas `DataFrame`s become HTML tables, matplotlib
-  figures are captured as inline PNGs, and any object with
-  `_repr_html_` / `_repr_svg_` / `_repr_png_` is rendered. `numpy` / `pandas` /
-  `matplotlib` come preloaded (see [Batteries included](#batteries-included)).
-- **Rust**: the equivalents are **`polars`** (dataframes) and **`plotters`** (charts).
-  plotters' `evcxr_figure(...)` renders inline when returned as the last expression,
-  and two built-in helpers display any markup:
+| Type | Wire format | When |
+| ---- | ----------- | ---- |
+| `Html` | HTML string | A DataFrame, chart, or custom `_repr_html_()` |
+| `Text` | Plain string | stdout/stderr or plain `repr()` |
+| `Exception` | `{message, traceback}` | Compile error or runtime exception |
+| `None` | *(absent)* | Statement with no return value |
 
-  ```rust
-  patina_html(&html);   // any HTML fragment — e.g. a polars table
-  patina_svg(&svg);     // inline SVG — e.g. a plotters SVGBackend string
-  ```
+### Python
 
-  evcxr persists `let` bindings across cells, so give them a concrete type and avoid a
-  trailing `?` (which makes type inference fail): `let df: DataFrame = df!(...).unwrap();`
+Uses IPython's display protocol, captured by an injected driver script:
+
+```python
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.DataFrame([[10, 20], [30, 40]], columns=["A", "B"])
+df                              # → HTML table (via _repr_html_)
+
+plt.plot([1, 2, 3], [1, 4, 9])
+plt.title("plot")
+plt.show()                      # → inline PNG image
+
+"My string"                     # → plain text
+
+1 / 0                           # → Exception with traceback
+```
+
+The last open matplotlib figure is auto-captured as a base64-encoded PNG injected into
+HTML. Any object with `_repr_html_()`, `_repr_svg_()`, or `_repr_png_()` is rendered
+accordingly. `numpy`, `pandas`, and `matplotlib` come preloaded (see [Batteries
+included](#batteries-included)).
+
+### Rust
+
+`evcxr` compiles each cell. The kernel detects evcxr's `text/html` content protocol
+and maps it to `Html` output. Two helper functions are injected into every cell:
+
+```rust
+// Render arbitrary HTML — useful for polars DataFrames
+println!("{:?}", df);           // → Text (stdout)
+patina_html(&html);             // → Html, rendered in the browser
+
+// Render inline SVG — useful for plotters charts
+use plotters::prelude::*;
+let chart = evcxr_figure(640, 480, |root| {
+    root.fill(&WHITE)?;
+    Ok(())
+});
+chart                           // → Html (inline SVG)
+
+patina_svg(&svg);              // → Html (inline SVG)
+```
+
+`polars`, `plotters` (with evcxr support), and `ndarray` come preloaded. evcxr persists
+`let` bindings across cells — use a concrete type annotation and avoid a trailing `?`
+(which causes type inference to fail): `let df: DataFrame = df!(...).unwrap();`
+
+### JavaScript
+
+The `boa` engine (pure Rust) captures `console.*` output and renders the final
+expression value as text:
+
+```javascript
+console.log("hello");
+[1, 2, 3]                       // → Text: "[ 1, 2, 3 ]"
+```
+
+Rich output (HTML/PNG/SVG) is not yet supported in JS.
 
 ## Workspace & files
 
@@ -74,23 +185,6 @@ breadcrumb. From the sidebar you can:
 - **Delete** files.
 
 The light/dark theme follows your OS by default and can be changed from the top bar.
-
-## How it works
-
-```text
- browser UI  ──ws──▶  patina (server, Rust)  ──tcp/bincode──▶  kernel (Rust)
- React, embedded                                               evcxr · pyo3 · boa
- in the binary
-```
-
-- **`patina`** — Axum web server: serves the embedded UI, manages the notebook
-  workspace, and spawns the per-language kernel as a child process.
-- **`patina-kernel` / `-python` / `-js`** — one binary per language, all speaking the
-  shared `comm` protocol over TCP. They share a networking run-loop and differ only in
-  the executor (`evcxr::CommandContext`, embedded CPython, or `boa`). stdout streams
-  live; the last expression renders as text or HTML; live variables feed the inspector.
-- **`common`** (`comm`) — the wire protocol (length-delimited bincode), the message
-  types, and the shared kernel runtime.
 
 ## Getting started (from source)
 
@@ -113,7 +207,7 @@ Then create a notebook and run a cell with `Shift`+`Enter`:
 ```rust
 let answer: i32 = 40 + 2;
 println!("hello from the rust kernel");
-answer            // -> 42
+answer            // → 42
 ```
 
 ## Batteries included
