@@ -27,7 +27,8 @@
     "resources": [
       "resources/toolchain/**/*",
       "resources/cargo/**/*",
-      "resources/python/**/*"
+      "resources/python/**/*",
+      "examples/**/*"
     ]
   },
   "plugins": {}

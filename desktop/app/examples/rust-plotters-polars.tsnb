@@ -1,0 +1,90 @@
+version = "patina 0.0.1"
+language = "Rust"
+
+[editor_root]
+id = "c91d2c61-4b45-4f68-8c8a-bbc833c7c2b8"
+name = "rust-plotters-polars"
+scope = "Own"
+
+[[editor_root.children]]
+type = "Cell"
+id = "b5384679-414c-40b1-9d45-5334bedb906e"
+code = '''
+//md
+# Rust rich output — polars & plotters
+
+The Rust equivalents of pandas/matplotlib:
+
+- **[polars](https://pola.rs/)** — dataframes
+- **[plotters](https://docs.rs/plotters/)** — charts
+
+Add crates with `:dep`, then render rich output two ways:
+
+- **`evcxr_figure(...)`** from plotters (enable the `evcxr` feature) — return it as the
+  cell's last expression and it renders as an inline chart.
+- **`patina_html(&html)` / `patina_svg(&svg)`** — built-in helpers that display any
+  HTML/SVG fragment (e.g. a polars table rendered to HTML, or any plotters SVG string).
+
+Run top to bottom (`Shift`+`Enter`). The first `:dep` compiles the crate, so it can take
+a bit; later cells are fast.'''
+
+[[editor_root.children]]
+type = "Cell"
+id = "7c27d50f-a831-4e4f-916f-aa5a24e6f8f8"
+code = '''
+// polars is preloaded (batteries-included), so no `:dep` is needed — that also
+// avoids recompiling it. (Other crates: add them with `:dep foo = "1"`.)
+use polars::prelude::*;
+
+// evcxr persists `let` bindings across cells and needs a concrete type to do
+// so — annotate `: DataFrame` and use `.unwrap()` (a trailing `?` makes evcxr
+// infer the never type `!` and fail).
+let df: DataFrame = df!(
+    "city"  => ["Oslo", "Tokyo", "Cairo"],
+    "temp"  => [4.0, 14.0, 29.0],
+    "users" => [120, 980, 540],
+).unwrap();
+println!("{df}");
+df.shape()'''
+
+[[editor_root.children]]
+type = "Cell"
+id = "84f7fadd-c9bf-4b6e-a06d-8ab45173fe25"
+code = '''
+//md
+## A plotters chart
+
+`evcxr_figure((w, h), |root| { ... })` is plotters' native notebook integration — returning
+it as the last expression renders an inline SVG.'''
+
+[[editor_root.children]]
+type = "Cell"
+id = "06e6431c-7d82-494c-bdd1-b1bfc013fb19"
+code = '''
+// plotters is preloaded too (with evcxr support) — no `:dep` needed.
+use plotters::prelude::*;
+use plotters::evcxr::evcxr_figure;
+
+evcxr_figure((640, 280), |root| {
+    root.fill(&WHITE)?;
+    let mut chart = ChartBuilder::on(&root)
+        .caption("y = x²", ("sans-serif", 22))
+        .margin(12)
+        .x_label_area_size(30)
+        .y_label_area_size(40)
+        .build_cartesian_2d(-5f32..5f32, 0f32..25f32)?;
+    chart.configure_mesh().draw()?;
+    chart.draw_series(LineSeries::new(
+        (-50..=50).map(|i| i as f32 / 10.0).map(|x| (x, x * x)),
+        &RED,
+    ))?;
+    Ok(())
+})'''
+
+[[editor_root.children]]
+type = "Cell"
+id = "1ce84628-924e-4b7d-9b8b-a7e994075783"
+code = '''
+// The built-in helpers render any HTML/SVG — handy for custom tables or markup.
+patina_html("<table border=1 cellpadding=6><tr><th>x</th><th>x²</th></tr>\
+<tr><td>2</td><td>4</td></tr><tr><td>3</td><td>9</td></tr></table>");'''

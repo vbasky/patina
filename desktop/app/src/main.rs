@@ -6,6 +6,10 @@
 //! server's localhost URL with a freshly generated auth key. The entire UI is
 //! still served by `patina` — Tauri just provides the window and process glue.
 //!
+//! Notebooks live in a stable, user-visible workspace (`~/Documents/Patina`),
+//! passed to the server via `PATINA_WORKSPACE` so it doesn't depend on the
+//! launch directory; the bundled `examples/` are seeded there on first run.
+//!
 //! If a relocatable Rust toolchain and/or Python ship with the app as bundle
 //! resources (`toolchain/`, `cargo/` and `python/` dirs — produced by
 //! ../prebuild.sh / ../build-*.sh and listed in `tauri.conf.json`
@@ -37,13 +41,21 @@ fn main() {
             // A per-launch auth key, handed to both the server and the webview URL.
             let key = uuid::Uuid::new_v4().simple().to_string();
 
+            // Notebooks live in a stable, user-visible folder (~/Documents/Patina)
+            // regardless of where the app is launched — not the process's cwd, which
+            // would otherwise scatter workspaces. Seed the examples on first run.
+            let workspace = resolve_workspace(app);
+            let _ = std::fs::create_dir_all(&workspace);
+            seed_examples(app, &workspace);
+
             // The `patina` server sidecar. The kernel sidecars sit next to it, so
             // the server's `locate_kernel` finds them automatically; env we set
             // here is inherited by those kernel child processes.
             let mut cmd = app
                 .shell()
                 .sidecar("patina")?
-                .args(["--port", &PORT.to_string(), "--key", &key]);
+                .args(["--port", &PORT.to_string(), "--key", &key])
+                .env("PATINA_WORKSPACE", workspace.to_string_lossy().to_string());
             cmd = with_bundled_runtimes(app, cmd);
 
             let (_rx, _child) = cmd.spawn()?;
@@ -59,6 +71,49 @@ fn main() {
         })
         .run(tauri::generate_context!())
         .expect("error while running the Patina desktop app");
+}
+
+/// The stable notebook workspace for the desktop app: `~/Documents/Patina`
+/// (falling back to `~/Patina`, then the cwd). Independent of where the app is
+/// launched from, so there's only ever one workspace.
+fn resolve_workspace(app: &App) -> PathBuf {
+    let base = app
+        .path()
+        .document_dir()
+        .or_else(|_| app.path().home_dir())
+        .unwrap_or_else(|_| PathBuf::from("."));
+    base.join("Patina")
+}
+
+/// On first run (workspace has no `.tsnb` files yet), copy the bundled example
+/// notebooks from the `examples/` resource into the workspace. No-op afterwards,
+/// so the user's own edits are never clobbered.
+fn seed_examples(app: &App, workspace: &Path) {
+    let has_notebook = std::fs::read_dir(workspace)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .any(|e| e.path().extension().is_some_and(|x| x == "tsnb"));
+    if has_notebook {
+        return;
+    }
+    // Bundled as a resource in the packaged app; fall back to the cwd-relative
+    // `examples/` so `cargo tauri dev` (run from desktop/app) seeds too.
+    let Some(examples) = find_resource(app, "examples")
+        .or_else(|| Some(PathBuf::from("examples")).filter(|p| p.is_dir()))
+    else {
+        return;
+    };
+    if let Ok(entries) = std::fs::read_dir(&examples) {
+        for entry in entries.flatten() {
+            let src = entry.path();
+            if src.extension().is_some_and(|x| x == "tsnb") {
+                if let Some(name) = src.file_name() {
+                    let _ = std::fs::copy(&src, workspace.join(name));
+                }
+            }
+        }
+    }
 }
 
 /// Point the server (and thus its kernels) at any bundled Rust toolchain /
