@@ -26,7 +26,6 @@
       <stop offset="0.55" stop-color="#ffffff" stop-opacity="0.55"/>
       <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>
-    <path id="hex" d="M120 16 L210 68 L210 172 L120 224 L30 172 L30 68 Z"/>
     <clipPath id="card"><rect x="1" y="1" width="1198" height="628" rx="18"/></clipPath>
   </defs>
 
@@ -68,9 +67,8 @@
 
   <!-- product logo (browser/ui/public/patina.svg), centered above the wordmark -->
   <g transform="translate(545, 64) scale(0.46)">
-    <path d="M120 16 L210 68 L210 172 L120 224 L30 172 L30 68 Z" fill="url(#pat)"/>
-    <path d="M120 16 L210 68 L210 172 L120 224 L30 172 L30 68 Z" fill="url(#patEdge)"/>
-    <path d="M120 16 L210 68 L210 172 L120 224 L30 172 L30 68 Z" fill="none" stroke="#1f5e4e" stroke-opacity="0.5" stroke-width="3"/>
+    <rect x="16" y="16" width="208" height="208" rx="50" fill="url(#pat)"/>
+    <rect x="16" y="16" width="208" height="208" rx="50" fill="url(#patEdge)"/>
     <!-- notebook page -->
     <rect x="80" y="72" width="80" height="96" rx="12" fill="#f5f1ea"/>
     <g fill="#2b7d68" fill-opacity="0.85">
