@@ -80,9 +80,7 @@ impl Settings {
                         .output()
                         .ok()?;
                     if output.status.success() {
-                        let prefix = String::from_utf8_lossy(&output.stdout)
-                            .trim()
-                            .to_string();
+                        let prefix = String::from_utf8_lossy(&output.stdout).trim().to_string();
                         if !prefix.is_empty() {
                             return Some(prefix);
                         }

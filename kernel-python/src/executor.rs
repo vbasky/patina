@@ -150,7 +150,11 @@ fn ensure_packages() {
     Python::with_gil(|py| {
         let helpers = PyDict::new(py);
         if py
-            .run(CString::new(ENSURE_PKGS).unwrap().as_c_str(), Some(&helpers), None)
+            .run(
+                CString::new(ENSURE_PKGS).unwrap().as_c_str(),
+                Some(&helpers),
+                None,
+            )
             .is_err()
         {
             return;

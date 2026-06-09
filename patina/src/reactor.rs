@@ -253,9 +253,10 @@ fn save_helper(
             // Refresh the listing for the folder the new notebook landed in.
             let rel_dir = path.parent().map(workspace::relativize).unwrap_or_default();
             if let Ok(message) = query_helper(&mut state, &rel_dir)
-                && let Some(notebook) = state.get_notebook_by_id(notebook_id) {
-                    notebook.send_raw_message(message)
-                }
+                && let Some(notebook) = state.get_notebook_by_id(notebook_id)
+            {
+                notebook.send_raw_message(message)
+            }
         }
     });
     Ok(())

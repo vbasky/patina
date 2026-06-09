@@ -39,8 +39,12 @@ pub fn ts_to_js(source: &str) -> Result<String, String> {
         .semantic
         .into_scoping();
 
-    let ret = Transformer::new(&allocator, Path::new("cell.ts"), &TransformOptions::default())
-        .build_with_scoping(scoping, &mut program);
+    let ret = Transformer::new(
+        &allocator,
+        Path::new("cell.ts"),
+        &TransformOptions::default(),
+    )
+    .build_with_scoping(scoping, &mut program);
     if !ret.errors.is_empty() {
         let msg = ret
             .errors

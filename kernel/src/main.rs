@@ -150,7 +150,10 @@ fn configure_persistent_build_dir() {
     let Some(home) = std::env::var_os("HOME") else {
         return;
     };
-    let dir = PathBuf::from(home).join(".patina").join("evcxr").join("rust");
+    let dir = PathBuf::from(home)
+        .join(".patina")
+        .join("evcxr")
+        .join("rust");
     if std::fs::create_dir_all(&dir).is_err() {
         return;
     }

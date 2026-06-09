@@ -201,10 +201,7 @@ pub(crate) fn notebook_to_ipynb(notebook: &Notebook) -> String {
                 cell.insert("cell_type".into(), "code".into());
                 cell.insert("source".into(), vec![code].into());
                 cell.insert("outputs".into(), serde_json::Value::Array(vec![]));
-                cell.insert(
-                    "execution_count".into(),
-                    serde_json::Value::Null,
-                );
+                cell.insert("execution_count".into(), serde_json::Value::Null);
             }
             cell.insert("metadata".into(), serde_json::Map::new().into());
             Some(serde_json::Value::Object(cell))
