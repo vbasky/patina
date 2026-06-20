@@ -61,6 +61,37 @@ jobs:
       - name: Clippy
         run: cargo clippy --workspace -- -D warnings
 
+  msrv:
+    name: msrv (rust-version from Cargo.toml)
+    runs-on: ubuntu-latest
+    needs: [build_ui]
+    steps:
+      - uses: actions/checkout@v4
+      # The server embeds the UI via include_bytes!, so the bundle must exist
+      # before anything that compiles `patina`.
+      - uses: actions/download-artifact@v4
+        with:
+          name: browser_ui
+          path: ./browser/ui/dist
+      # The Python kernel embeds CPython via pyo3, so a Python must be present.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: read MSRV from Cargo.toml
+        id: msrv
+        run: |
+          v=$(grep -m1 '^rust-version' Cargo.toml | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?')
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      - name: install rust ${{ steps.msrv.outputs.version }}
+        run: |
+          rustup toolchain install ${{ steps.msrv.outputs.version }} --no-self-update
+          rustup default ${{ steps.msrv.outputs.version }}
+
+      - name: check (consumer targets, matches published MSRV)
+        run: cargo check --workspace
+
   build:
     name: Build (${{ matrix.platform.name }})
     runs-on: ${{ matrix.platform.runner }}

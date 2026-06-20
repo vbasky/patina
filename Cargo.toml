@@ -7,6 +7,9 @@ default-members = ["patina", "common", "kernel", "kernel-python", "kernel-js"]
 # not part of the core build.
 exclude = ["desktop/app"]
 
+[workspace.package]
+rust-version = "1.95"
+
 [workspace.dependencies]
 tokio = "1"
 serde = { version = "1.0", features = ["rc"] }

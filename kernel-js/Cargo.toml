@@ -2,6 +2,7 @@
 name = "patina-kernel-js"
 version = "0.1.0"
 edition = "2024"
+rust-version.workspace = true
 description = "TypeScript kernel for Patina — strips types with oxc, then evaluates the JS via the pure-Rust boa engine (no V8)"
 
 [[bin]]

@@ -2,6 +2,7 @@
 name = "patina-kernel-python"
 version = "0.1.0"
 edition = "2024"
+rust-version.workspace = true
 description = "Python kernel for Patina — evaluates Python cells via an embedded CPython (pyo3)"
 
 [[bin]]

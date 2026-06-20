@@ -8,6 +8,7 @@ JavaScript engine and the TypeScript transpiler) is built in.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/vbasky/patina/build.yml?branch=main&logo=github&label=CI)](https://github.com/vbasky/patina/actions)
 [![License](https://img.shields.io/github/license/vbasky/patina)](LICENSE-MIT)
+[![MSRV](https://img.shields.io/badge/MSRV-1.95-blue)](https://www.rust-lang.org)
 [![kernels](https://img.shields.io/badge/kernels-Rust%20·%20Python%20·%20TypeScript-c47b3f?logo=rust)](#languages)
 [![UI](https://img.shields.io/badge/UI-React-61dafb?logo=react)](browser/ui)
 [![Stars](https://img.shields.io/github/stars/vbasky/patina?style=social)](https://github.com/vbasky/patina/stargazers)

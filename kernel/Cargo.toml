@@ -2,6 +2,7 @@
 name = "patina-kernel"
 version = "0.1.0"
 edition = "2024"
+rust-version.workspace = true
 description = "Rust kernel for Patina — evaluates Rust cells via an embedded evcxr context"
 
 [[bin]]
