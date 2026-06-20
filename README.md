@@ -10,6 +10,8 @@ JavaScript engine and the TypeScript transpiler) is built in.
 [![License](https://img.shields.io/github/license/vbasky/patina)](LICENSE-MIT)
 [![kernels](https://img.shields.io/badge/kernels-Rust%20·%20Python%20·%20TypeScript-c47b3f?logo=rust)](#languages)
 [![UI](https://img.shields.io/badge/UI-React-61dafb?logo=react)](browser/ui)
+[![Stars](https://img.shields.io/github/stars/vbasky/patina?style=social)](https://github.com/vbasky/patina/stargazers)
+[![Follow @vbasky](https://img.shields.io/github/followers/vbasky?style=social&label=Follow%20%40vbasky)](https://github.com/vbasky)
 
 **Patina is a Rust-native interactive notebook.** Cells run in **Rust**, **Python**,
 or **TypeScript** — and the stack around them (web server, kernels, wire protocol,
@@ -42,7 +44,7 @@ matching kernel binary.
 
 When you press `Shift+Enter` in the browser, here's what happens start to finish:
 
-```
+```text
 ┌──────────────┐     WebSocket (JSON)     ┌──────────────┐     TCP (bincode)     ┌──────────────┐
 │  Browser UI  │ ◄──────────────────────► │   Server     │ ◄───────────────────► │   Kernel     │
 │   (React)    │                          │   (Axum)     │                       │   Process    │
